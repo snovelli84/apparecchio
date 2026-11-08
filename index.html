@@ -1,0 +1,1078 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>APParecchio</title>
+<meta name="description" content="Il menù settimanale di famiglia: cosa preparare adesso e la lista della spesa.">
+<meta name="theme-color" content="#2E7A55">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icone/favicon-32.png">
+<link rel="icon" type="image/svg+xml" href="icone/icona.svg">
+<link rel="apple-touch-icon" href="icone/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="APParecchio">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px)}
+html{-webkit-text-size-adjust:100%}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: app a colonna singola (max 600px), tab bar in basso, la "tovaglia" a quadretti come fondo dell'intestazione */
+:root{
+  --bg:#F2F5F1; --surface:#FFFFFF; --surface-2:#E7EDE6; --line:#D3DDD2;
+  --ink:#16261E; --muted:#5B6E63; --accent:#2E7A55; --accent-ink:#FFFFFF; --accent-soft:#DCEFE3;
+  --warm:#E0782F; --warm-soft:#FBE7D7; --check:#9AAA9F;
+  --font-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --font-body:"Figtree", "Segoe UI", system-ui, sans-serif;
+  --r:14px; --shadow:0 1px 2px rgba(22,38,30,.06), 0 6px 18px rgba(22,38,30,.06);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1814; --surface:#17231D; --surface-2:#1E2C25; --line:#2B3C33;
+  --ink:#E7F0EA; --muted:#97AA9F; --accent:#5DC08C; --accent-ink:#0B1A12; --accent-soft:#1D3A2B;
+  --warm:#F29A55; --warm-soft:#3A2617; --check:#5D6E64; --shadow:none; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0F1814; --surface:#17231D; --surface-2:#1E2C25; --line:#2B3C33;
+  --ink:#E7F0EA; --muted:#97AA9F; --accent:#5DC08C; --accent-ink:#0B1A12; --accent-soft:#1D3A2B;
+  --warm:#F29A55; --warm-soft:#3A2617; --check:#5D6E64; --shadow:none; color-scheme:dark;}
+
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:600px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 calc(96px + env(safe-area-inset-bottom,0px))}
+h1,h2,h3{font-family:var(--font-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.label{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+
+/* Header */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 8px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:40px;height:40px;flex:none}
+.word{font-family:var(--font-display);font-size:24px;font-weight:700;letter-spacing:-.02em}
+.word b{color:var(--accent);font-weight:800}
+.persone{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:5px 10px}
+.persone svg{width:16px;height:16px}
+
+/* Tab bar */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+.tabs nav{max-width:600px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+.tabs button{background:none;border:0;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--muted)}
+.tabs button svg{width:22px;height:22px}
+.tabs button[aria-current="page"]{color:var(--accent)}
+.tabs button[aria-current="page"] .pill{background:var(--accent-soft)}
+.tabs .pill{border-radius:99px;padding:3px 16px;display:grid;place-items:center}
+
+/* Generic */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 14px;font-weight:600;font-size:14px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:none;border-color:transparent;color:var(--accent);padding-inline:6px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:99px;padding:6px 12px;font-size:13px;font-weight:600;color:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.chip .dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warm);margin-left:5px;vertical-align:middle}
+.kcal{display:inline-flex;align-items:center;gap:4px;background:var(--warm-soft);color:var(--warm);font-weight:700;font-size:13px;border-radius:99px;padding:3px 9px;white-space:nowrap}
+.muted{color:var(--muted)}
+.notice{font-size:13px;color:var(--muted);padding:10px 12px;border:1px dashed var(--line);border-radius:10px}
+
+/* Focus card: la tovaglia */
+.focus{position:relative;overflow:hidden;border-radius:20px;background:var(--accent);color:var(--accent-ink);padding:18px 18px 16px}
+.focus::before{content:"";position:absolute;inset:0;opacity:.13;pointer-events:none;
+  background-image:linear-gradient(90deg,currentColor 50%,transparent 50%),linear-gradient(currentColor 50%,transparent 50%);
+  background-size:28px 28px;mask-image:linear-gradient(160deg,#000 0%,transparent 55%);-webkit-mask-image:linear-gradient(160deg,#000 0%,transparent 55%)}
+.focus > *{position:relative}
+.focus .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;opacity:.85}
+.focus h2{font-size:30px;line-height:1.08;margin-top:6px;font-weight:800}
+.focus .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;font-size:13px;font-weight:600}
+.focus .meta span{background:color-mix(in srgb,var(--accent-ink) 16%,transparent);border-radius:99px;padding:4px 10px}
+.focus .ing{margin-top:14px;background:var(--surface);color:var(--ink);border-radius:14px;padding:4px 14px}
+
+/* Ingredient table */
+.ingt{width:100%;border-collapse:collapse}
+.ingt td{padding:9px 0;border-bottom:1px solid var(--line);vertical-align:baseline}
+.ingt tr:last-child td{border-bottom:0}
+.ingt td.q{text-align:right;color:var(--muted);white-space:nowrap;padding-left:10px;font-size:13px}
+.ingt td.t{text-align:right;white-space:nowrap;padding-left:12px;font-weight:700}
+.ingt th{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;text-align:right;padding:10px 0 2px 10px}
+.ingt th:first-child{text-align:left;padding-left:0}
+.notes{display:flex;flex-direction:column;gap:6px;margin-top:10px;font-size:14px;color:var(--muted)}
+.notes b{color:var(--ink);font-weight:600}
+
+/* Timeline */
+.tl{display:flex;flex-direction:column}
+.tl button{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);padding:12px 2px}
+.tl button:last-child{border-bottom:0}
+.tl .ora{font-size:13px;color:var(--muted);font-weight:600}
+.tl .tit{min-width:0}
+.tl .tit small{display:block;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.tl .tit span{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tl .passato{opacity:.5}
+.tl .ora-now{color:var(--accent);font-weight:800}
+.tl .adesso .tit small{color:var(--accent)}
+.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:6px}
+.sec-h h3{font-size:19px}
+
+/* Settimana */
+.day{padding:14px 16px}
+.day-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px}
+.day-h h3{font-size:18px}
+.day-h .oggi{font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:99px;padding:2px 8px;margin-left:6px;vertical-align:middle;font-family:var(--font-body);letter-spacing:.04em;text-transform:uppercase}
+.mini{display:grid;grid-template-columns:96px 1fr auto;gap:10px;align-items:baseline;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:8px 0}
+.mini .t{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:600}
+.mini .n{min-width:0;font-weight:500}
+.mini .k{font-size:13px;color:var(--muted)}
+
+/* Spesa */
+.ask{padding:22px 18px;text-align:left}
+.ask h2{font-size:26px;line-height:1.1}
+.ngrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:16px}
+.ngrid button{aspect-ratio:1;max-width:100%;border:1px solid var(--line);background:var(--surface-2);border-radius:12px;font-family:var(--font-display);font-size:20px;font-weight:700}
+.ngrid button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:14px}
+.seg button{border:0;background:var(--surface);padding:8px 14px;font-size:14px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.cat{padding:6px 16px 4px}
+.cat h3{font-size:15px;padding:10px 0 4px;font-family:var(--font-body);font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.item{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line);cursor:pointer}
+.item input{width:20px;height:20px;margin:1px 0 0;accent-color:var(--accent)}
+.item .nm{font-weight:600;min-width:0}
+.item .src{display:block;font-size:12px;color:var(--muted);font-weight:400;margin-top:2px}
+.item .qt{font-weight:700;text-align:right;white-space:nowrap}
+.item .qt small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.item.done .nm,.item.done .qt{color:var(--check);text-decoration:line-through}
+.range{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px}
+.range strong{font-family:var(--font-display);font-size:20px}
+
+/* Dieta */
+textarea{width:100%;box-sizing:border-box;min-height:46vh;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:var(--r);padding:14px;font:14px/1.5 ui-monospace,"SF Mono",Menlo,Consolas,monospace;resize:vertical}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.stepper button{border:0;background:none;width:38px;height:38px;font-size:20px;font-weight:700}
+.stepper span{min-width:30px;text-align:center;font-weight:700}
+.parsed{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.parsed div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
+.parsed b{display:block;font-family:var(--font-display);font-size:15px}
+.status{font-size:13px;font-weight:600}
+.status.ok{color:var(--accent)} .status.err{color:var(--warm)}
+
+.notice.warn{color:var(--warm);border-color:var(--warm);background:var(--warm-soft);border-style:solid}
+.ricetta-btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:var(--surface);color:var(--ink);border-color:transparent}
+.btn svg{width:18px;height:18px;vertical-align:-3px}
+.ricetta{margin-top:16px;padding-top:12px;border-top:1px solid var(--line)}
+.ricetta h4{font-family:var(--font-display);font-size:16px;margin:14px 0 4px}
+.ricetta p{margin:4px 0}.ricetta ul,.ricetta ol{margin:4px 0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
+.ricetta-azioni{margin-top:12px}
+.settimana-box{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
+.regole{display:flex;flex-direction:column}
+.regola{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.regola small{display:block;color:var(--muted);font-size:13px}
+.regola-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:end;margin-top:6px}
+.regola-form label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.regola-form .largo{grid-column:1 / -1}
+.regola-form select,.regola-form input{font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-width:0;width:100%;box-sizing:border-box}
+.regola-form .btn{grid-column:1 / -1;justify-self:start}
+/* Sheet */
+.sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(10,20,15,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:600px;max-height:88vh;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;box-sizing:border-box;
+  padding:18px max(18px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px))}
+.sheet .grab{width:40px;height:4px;border-radius:9px;background:var(--line);margin:0 auto 14px}
+.sheet h2{font-size:26px;line-height:1.1}
+.empty{text-align:center;padding:36px 18px}
+.empty svg{width:72px;height:72px;margin-bottom:10px}
+.empty h2{font-size:22px;margin-bottom:6px}
+@media (prefers-reduced-motion:no-preference){.view{animation:in .25s ease-out}@keyframes in{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}}
+@media (max-width:380px){.focus h2{font-size:26px}.mini{grid-template-columns:80px 1fr auto}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand" aria-label="APParecchio">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <rect width="48" height="48" rx="13" fill="var(--accent)"/>
+        <circle cx="24" cy="24" r="12.5" fill="var(--surface)"/>
+        <circle cx="24" cy="24" r="8.5" fill="none" stroke="var(--accent)" stroke-opacity=".35" stroke-width="1.5"/>
+        <path d="M9.5 12v7.5a2.2 2.2 0 0 0 4.4 0V12M11.7 12v24" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round" fill="none"/>
+        <path d="M38.3 12c-2.6 1.8-3.4 5.5-3.4 10.5h3.4V36" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M24 19.5c3 0 4.4 2.3 4.4 4.5s-1.9 4.5-4.4 4.5" stroke="var(--warm)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+      </svg>
+      <span class="word"><b>APP</b>arecchio</span>
+    </div>
+    <div class="persone" id="persone-badge" title="Persone a tavola">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.4.2 4 1.9 4.5 4.6"/></svg>
+      <span class="num" id="persone-n">3</span> a tavola
+    </div>
+  </header>
+  <main id="app"></main>
+</div>
+
+<div class="tabs"><nav aria-label="Sezioni">
+  <button data-view="oggi"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="7"/><path d="M12 9.5V13l2.5 1.5M9 2.5h6"/></svg></span>Adesso</button>
+  <button data-view="settimana"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>Settimana</button>
+  <button data-view="spesa"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.2l2.3 11h10.8l2-8H7"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg></span>Spesa</button>
+  <button data-view="dieta"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg></span>Dieta</button>
+</nav></div>
+
+<div class="sheet-bg" id="sheet" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="grab"></div><div id="sheet-body"></div>
+  <div class="row" style="margin-top:16px"><button class="btn" id="sheet-close">Chiudi</button></div></div></div>
+
+
+<script type="module">
+import * as F from './firebase.js';
+import CONFIG from './config.js';
+(function(){
+const $ = s => document.querySelector(s);
+const app = $('#app');
+
+/* ---------- Costanti ---------- */
+const TIPI = {
+  colazione:{label:'Colazione', ora:'07:30', fine:8*60+30},
+  spuntino:{label:'Spuntino', ora:'10:30', fine:11*60},
+  pranzo:{label:'Pranzo', ora:'13:00', fine:14*60+30},
+  merenda:{label:'Merenda', ora:'16:30', fine:17*60+30},
+  ponte:{label:'Spuntino ponte', ora:'18:30', fine:19*60},
+  cena:{label:'Cena', ora:'20:00', fine:21*60+30}
+};
+const ORDINE = ['colazione','spuntino','pranzo','merenda','ponte','cena'];
+const PRINCIPALI = ['colazione','pranzo','cena'];
+const GIORNI = ['Domenica','Lunedì','Martedì','Mercoledì','Giovedì','Venerdì','Sabato'];
+const GIORNI_BREVI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab'];
+const MESI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+const GIORNO_DA_NOME = {domenica:0,lunedi:1,martedi:2,mercoledi:3,giovedi:4,venerdi:5,sabato:6};
+const CONTABILI = ['pera','pere','mela','mele','kiwi','clementina','clementine','arancia','arance','banana','mandarino','frutta di stagione','cappuccino','yogurt','yogurt greco','uovo','pesca','frutto'];
+const ALIAS = {'carote crude':'carote','funghi trifolati':'funghi','spinaci saltati':'spinaci','zucca al forno':'zucca','uovo':'uova','pere':'pera','mele':'mela','arance':'arancia','clementine':'clementina'};
+const CATEGORIE = [
+  ['Frutta e verdura',['pera','mela','kiwi','clementin','arancia','banana','mandarin','frutta','broccoli','cavolfiore','finocch','carot','fungh','insalata','radicchio','zucca','rosmarino','prezzemolo','basilico','sedano','cavolo','carciof','spinaci','limone','cetriol','pomodor','zucchin','lattuga','rucola']],
+  ['Carne e pesce',['pollo','tonno','manzo','tacchino','salmone','merluzzo','pesce','vitello','maiale','prosciutto','bresaola']],
+  ['Latticini e uova',['yogurt','uov','parmigiano','latte','cappuccino','ricotta','mozzarella','formaggio']],
+  ['Pane, cereali e legumi',['pane','avena','orzo','farro','riso','pasta','cous','cannellini','borlotti','ceci','lenticchie','fagioli','quinoa','gallette']],
+  ['Dispensa',['brodo','noci','mandorle','olio','cannella','pepe','sale','aceto','miele','nocciole']]
+];
+
+/* ---------- Parser della dieta ---------- */
+function cap(s){ return s ? s.charAt(0).toUpperCase()+s.slice(1) : s }
+function chiaveSpesa(nome){
+  let n=norm(nome).replace(/\s+(o|oppure)\s+.*$/,'').replace(/\s+(al|alla|alle|allo|ai|agli|a|in|se)\s+.*$/,'').replace(/\s+(saltati|saltate|trifolati|trifolate|crude|crudi|moderato|grigliati|grigliate|lessi|lesse)$/,'').trim();
+  return ALIAS[n]||n;
+}
+function parseVoce(t){
+  let m; const n = t.replace(/\s+/g,' ').trim();
+  const conv = (q,u) => { q=parseFloat(String(q).replace(',','.')); u=u.toLowerCase(); if(u==='gr') u='g'; if(u==='kg') return [q*1000,'g']; if(u==='l') return [q*1000,'ml']; return [q,u]; };
+  if((m = n.match(/^(\d+(?:[.,]\d+)?)\s*(g|gr|kg|ml|l)\s+(?:di\s+)?(.+)$/i))){ const [q,u]=conv(m[1],m[2]); return {nome:cap(m[3]),qta:q,unita:u}; }
+  if((m = n.match(/^(.+?)\s+(\d+(?:[.,]\d+)?)\s*(g|gr|kg|ml|l)$/i))){ const [q,u]=conv(m[2],m[3]); return {nome:cap(m[1]),qta:q,unita:u}; }
+  if((m = n.match(/^(\d+)\s+(.+)$/))) return {nome:cap(m[2]),qta:+m[1],unita:'pz'};
+  if(CONTABILI.includes(norm(n)) || CONTABILI.includes(chiaveSpesa(n))) return {nome:cap(n),qta:1,unita:'pz'};
+  return {nome:cap(n),qta:null,unita:null};
+}
+const MESI_ABBR = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+function risolviData(dow, giorno, mese, ref){
+  let best=null, bestD=1e9;
+  for(const soloDow of [true,false]){
+    for(let o=-2;o<=2;o++){
+      const r=new Date(ref.getFullYear(), ref.getMonth()+o, 1, 12);
+      if(mese!=null && r.getMonth()!==mese) continue;
+      const c=new Date(r.getFullYear(), r.getMonth(), giorno, 12);
+      if(c.getMonth()!==r.getMonth() || (soloDow && c.getDay()!==dow)) continue;
+      const dd=Math.abs(c-ref); if(dd<bestD){ best=c; bestD=dd; }
+    }
+    if(best) return best;
+  }
+  return null;
+}
+function parseDieta(testo, inizio){
+  const settimana = {}, datati = {}; let g=null, p=null, opz=null;
+  const ref = inizio ? daIso(inizio) : new Date();
+  const righe = (testo||'').split(/\r?\n/);
+  // Con gli asterischi gli ingredienti sono le righe puntate; senza, sono le righe sotto il titolo
+  const conPunti = righe.some(l=>/^[*\-•·]\s/.test(l.trim()));
+  const LIBERO = /libera|liber[oi]\b|mensa|ristorante|fuori casa|uscita/i;
+  const chiudiPasto = () => {
+    if(p && !conPunti && p._prov && !p.voci.length && !p.libero){ p.voci.push(...dividiVoce(p.titolo)); p.titolo=''; }
+    if(p) delete p._prov, delete p._vuota;
+  };
+  for(const raw of righe){
+    const line = raw.trim();
+    if(!line){ if(p && p._prov) p._vuota=true; if(!conPunti) opz=opz&&opz.items.length?null:opz; continue; }
+    const bullet = /^[*\-•·]\s*/.test(line);
+    const clean = line.replace(/^[*\-•·]\s*/,'').trim();
+    const hn = norm(line).replace(/[^a-z0-9\/ ]/g,' ').replace(/\s+/g,' ').trim();
+    const gm = !bullet && hn.match(/^(lunedi|martedi|mercoledi|giovedi|venerdi|sabato|domenica)(?: (\d{1,2})(?: ([a-z]+)|\/(\d{1,2}))?)?$/);
+    if(gm){
+      chiudiPasto();
+      const dow=GIORNO_DA_NOME[gm[1]];
+      if(gm[2]){
+        const mese = gm[3] ? MESI_ABBR.indexOf(gm[3].slice(0,3)) : gm[4] ? +gm[4]-1 : null;
+        const d = risolviData(dow, +gm[2], mese>=0?mese:null, ref);
+        if(d){ g={dow:d.getDay(), data:iso(d), pasti:[]}; datati[g.data]=g; p=null; opz=null; continue; }
+      }
+      g={dow,pasti:[]}; settimana[dow]=g; p=null; opz=null; continue;
+    }
+    if(!g) continue;
+    const mh = !bullet && norm(clean).match(/^(colazione|spuntino ponte|spuntino|pranzo|merenda|cena)\s*(\(([^)]*)\))?$/);
+    if(mh){
+      chiudiPasto();
+      const tipo = mh[1]==='spuntino ponte' ? 'ponte' : mh[1];
+      const par = (mh[3]||'').trim();
+      const om = par.match(/(\d{1,2})[:.](\d{2})/), km = par.match(/(\d+)\s*kcal/);
+      p = {tipo, speciale:!!g.data, label:TIPI[tipo].label, ora: om ? om[1].padStart(2,'0')+':'+om[2] : TIPI[tipo].ora, titolo:'', voci:[], kcal: km?+km[1]:null, note:[], chi: (!om && !km && par) ? par : ''};
+      g.pasti.push(p); opz=null; continue;
+    }
+    if(!p) continue;
+    const k = !bullet && clean.match(/^[≈~]?\s*(\d+)\s*kcal/i);
+    if(k){ p.kcal=+k[1]; opz=null; continue; }
+    // titolo provvisorio seguito subito da un'altra riga: era un ingrediente
+    if(!conPunti && p._prov && !p._vuota && !p.libero){ p.voci.unshift(...dividiVoce(p.titolo)); p.titolo=''; }
+    if(p._prov && (p._vuota || p.libero)) delete p._prov;
+    if(/:$/.test(clean) && !bullet){
+      const h = clean.slice(0,-1).trim();
+      if(/^con$/i.test(h)) opz=null; else { opz={h,items:[]}; p.note.push(opz); }
+      continue;
+    }
+    if(bullet || !conPunti){
+      if(opz && (bullet || p.libero || !/\d/.test(clean))){ opz.items.push(clean); continue; }
+      if(bullet){ if(p.libero) p.note.push({t:clean}); else p.voci.push(...dividiVoce(clean)); continue; }
+      // senza asterischi
+      if(p.libero){ p.note.push({t:clean}); continue; }
+      if(!p.titolo && !p.voci.length && !/\d/.test(clean)){ p.titolo=clean; p._prov=true; p._vuota=false; if(LIBERO.test(clean)) p.libero=true; continue; }
+      p.voci.push(...dividiVoce(clean)); continue;
+    }
+    opz=null;
+    if(!p.titolo && !p.voci.length){ p.titolo = clean; if(LIBERO.test(clean)) p.libero=true; }
+    else p.note.push({t:clean});
+  }
+  chiudiPasto();
+  // "Pranzo (voi)" + "Pranzo (bambina)": un solo pranzo, l'altro diventa una nota
+  for(const d of [...Object.values(settimana),...Object.values(datati)]){
+    const out=[];
+    for(const x of d.pasti){
+      const i=out.findIndex(y=>y.tipo===x.tipo);
+      if(i<0){ out.push(x); continue; }
+      const m=out[i], [princ, altro] = (!m.voci.length && x.voci.length) ? [x,m] : [m,x];
+      princ.note.push({t:`${cap(altro.chi||altro.label)}: ${altro.titolo || altro.voci.map(v=>v.nome).join(', ') || altro.label}`});
+      out[i]=princ;
+    }
+    d.pasti=out;
+    d.pasti.sort(ordinaPasti);
+  }
+  return {settimana, datati};
+}
+function dividiVoce(t){
+  const v=parseVoce(t);
+  if(v.qta!=null) return [v];
+  const parti=t.split(/\s+e\s+/i);
+  if(parti.length>1 && parti.every(x=>x.trim().split(/\s+/).length<=2)) return parti.map(x=>parseVoce(x.trim()));
+  return [v];
+}
+
+function ordinaPasti(a,b){ return ORDINE.indexOf(a.tipo)-ORDINE.indexOf(b.tipo) }
+function nGiorni(r){ return Object.keys(r.settimana).length + Object.keys(r.datati).length }
+/* ---------- Stato ---------- */
+const LS = { get(k,d){ try{ const v=localStorage.getItem('apparecchio:'+k); return v==null?d:JSON.parse(v) }catch(e){ return d } },
+             set(k,v){ try{ localStorage.setItem('apparecchio:'+k, JSON.stringify(v)) }catch(e){} } };
+const S = {
+  view:'oggi', settimane:[], datati:{}, assenze:[], persone:3,
+  stato:'loading', settCol:null, famRef:null, spunteCol:null, ricetteCol:null, sample:null,
+  giornoSel:null, filtroTipo:null, settSel:null,
+  edit:null, // {id, inizio, testo, nuova, conferma}
+  spesa:{giorni:null, da:null}, spunte: LS.get('spunte',{}), spunteErr:''
+};
+const VIEWS = ['oggi','settimana','spesa','dieta'];
+
+/* ---------- Date ---------- */
+function minuti(d){ return d.getHours()*60+d.getMinutes() }
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x }
+function iso(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') }
+function daIso(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d,12) }
+function diffG(a,b){ return Math.round((daIso(iso(a))-daIso(iso(b)))/864e5) }
+function lunediProssimo(now){ return addDays(now, ((8-now.getDay())%7)||7) }
+function dataBreve(d){ return `${GIORNI_BREVI[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()].slice(0,3)}` }
+function settimanaTesto(inizio){
+  if(!inizio) return '';
+  const i=daIso(inizio), f=addDays(i,6);
+  return i.getMonth()===f.getMonth() ? `${i.getDate()}–${f.getDate()} ${MESI[f.getMonth()]}` : `${i.getDate()} ${MESI[i.getMonth()]} – ${f.getDate()} ${MESI[f.getMonth()]}`;
+}
+function haDieta(){ return S.settimane.length>0 }
+/* La settimana valida per un giorno: l'ultima iniziata entro quel giorno */
+function settimanaPer(d){ let w=null; for(const x of S.settimane) if(diffG(d,daIso(x.inizio))>=0) w=x; return w }
+function giornoData(d){
+  const x=S.datati[iso(d)], w=settimanaPer(d);
+  const base = w ? (w.r.settimana[d.getDay()]||null) : null;
+  if(!x) return base;
+  if(!base) return x;
+  return {dow:d.getDay(), pasti:[...base.pasti.filter(p=>!x.pasti.some(q=>q.tipo===p.tipo)), ...x.pasti].sort(ordinaPasti)};
+}
+function inizioCiclo(now){
+  const w=settimanaPer(now);
+  if(!w) return S.settimane[0] ? daIso(S.settimane[0].inizio) : addDays(now, -((now.getDay()+6)%7));
+  const i=daIso(w.inizio), k=diffG(now,i);
+  return k<7 ? i : addDays(i, Math.floor(k/7)*7);
+}
+function giorniCiclo(now){
+  const s=inizioCiclo(now), pre=[];
+  for(let d=new Date(now); diffG(d,s)<0; d=addDays(d,1)) if(giornoData(d)) pre.push(d);
+  return [...pre, ...[0,1,2,3,4,5,6].map(i=>addDays(s,i))];
+}
+function giorniOggi(now){
+  const base=giorniCiclo(now), fine=addDays(now,6), out=[...base];
+  for(let d=addDays(base[base.length-1],1); diffG(fine,d)>=0; d=addDays(d,1)) if(giornoData(d)) out.push(d);
+  return out;
+}
+function regola(d,p){ return S.assenze.find(r=>r.dow===d.getDay() && r.tipo===p.tipo) }
+function personePer(d,p){ const r=regola(d,p); return r ? Math.max(0, S.persone-(r.fuori||1)) : S.persone }
+function aTavola(d,p){ const r=regola(d,p), n=personePer(d,p); return `${n} ${n===1?'persona':'persone'}${r&&r.nota?' · '+esc(r.nota):''}` }
+function pastoData(d,tipo){ const g=giornoData(d); return g ? g.pasti.find(p=>p.tipo===tipo) : null }
+function avviso(now){
+  if(!S.settimane.length) return '';
+  const w=settimanaPer(now);
+  if(!w){ const i=daIso(S.settimane[0].inizio), k=diffG(i,now);
+    return `<p class="notice">La dieta della settimana ${settimanaTesto(S.settimane[0].inizio)} inizia ${k===1?'domani':GIORNI[i.getDay()].toLowerCase()+' '+i.getDate()}.</p>`; }
+  const k=diffG(now,daIso(w.inizio)), ultima=w===S.settimane[S.settimane.length-1];
+  if(k>=7) return `<p class="notice warn">La settimana ${settimanaTesto(w.inizio)} è finita. Finché non inserisci la nuova dieta, APParecchio ripete questa.</p>`;
+  if(ultima && k>=4) return `<p class="notice">Non hai ancora inserito la dieta della settimana dal ${addDays(daIso(w.inizio),7).getDate()} ${MESI[addDays(daIso(w.inizio),7).getMonth()]}. <button class="btn ghost" data-go="dieta" data-nuova="1">Inseriscila</button></p>`;
+  return '';
+}
+function focusAdesso(now){
+  const m=minuti(now);
+  for(const t of PRINCIPALI){ if(m < TIPI[t].fine && pastoData(now,t)) return {data:now, tipo:t, oggi:true}; }
+  for(let i=1;i<=14;i++){ const d=addDays(now,i), g=giornoData(d); if(g && g.pasti.length){ const p=g.pasti.find(x=>PRINCIPALI.includes(x.tipo))||g.pasti[0]; return {data:d, tipo:p.tipo, oggi:false, domani:i===1}; } }
+  return null;
+}
+/* ---------- Formattazione ---------- */
+const fmtN = n => n.toLocaleString('it-IT',{maximumFractionDigits:1});
+function fmtQ(q,u){
+  if(q==null) return 'q.b.';
+  if(u==='g'||u==='ml'){ if(q>=1000) return fmtN(q/1000)+(u==='g'?' kg':' l'); return fmtN(Math.round(q))+' '+u; }
+  return fmtN(q)+' pz';
+}
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])) }
+function slug(s){ return norm(s).replace(/[^a-z0-9_\-.~:@+]+/g,'-').replace(/^-+|-+$/g,'').slice(0,180)||'x' }
+function titoloPasto(p){ return p.titolo || (p.voci.length ? p.voci.map(v=>v.nome).join(', ') : p.label) }
+function libero(p){ return !p.voci.length }
+function totaleKcal(g){ return g ? g.pasti.reduce((s,p)=>s+(p.kcal||0),0) : 0 }
+
+function tabellaVoci(p,N){
+  if(!p.voci.length) return '';
+  N = N ?? S.persone;
+  return `<table class="ingt num"><thead><tr><th>Ingrediente</th><th>a persona</th><th>per ${N}</th></tr></thead><tbody>${
+    p.voci.map(v=>`<tr><td>${esc(v.nome)}</td><td class="q">${fmtQ(v.qta,v.unita)}</td><td class="t">${v.qta==null?'q.b.':fmtQ(v.qta*N,v.unita)}</td></tr>`).join('')
+  }</tbody></table>`;
+}
+function noteHtml(p){
+  if(!p.note.length) return '';
+  return `<div class="notes">${p.note.map(n=> n.h ? `<div><b>${esc(n.h)}:</b> ${esc(n.items.join(', '))}</div>` : `<div>${esc(n.t)}</div>`).join('')}</div>`;
+}
+const inl = s => esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>');
+function md(t){
+  let out='', list=null; const close=()=>{ if(list){ out+=`</${list}>`; list=null } };
+  for(const raw of String(t).split('\n')){
+    const l=raw.trim(); if(!l){ close(); continue } let m;
+    if((m=l.match(/^#{1,4}\s+(.*)/))){ close(); out+=`<h4>${inl(m[1])}</h4>` }
+    else if((m=l.match(/^[-*•]\s+(.*)/))){ if(list!=='ul'){ close(); out+='<ul>'; list='ul' } out+=`<li>${inl(m[1])}</li>` }
+    else if((m=l.match(/^\d+[.)]\s+(.*)/))){ if(list!=='ol'){ close(); out+='<ol>'; list='ol' } out+=`<li>${inl(m[1])}</li>` }
+    else { close(); out+=`<p>${inl(l)}</p>` }
+  }
+  close(); return out;
+}
+
+/* ---------- Viste ---------- */
+function vistaVuota(){
+  if(S.stato==='loading') return `<div class="card empty"><h2>Apparecchio la tavola…</h2><p class="muted">Sto caricando la dieta della settimana.</p></div>`;
+  return `<div class="card empty">
+    <svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="17" fill="var(--surface-2)"/><circle cx="24" cy="24" r="11" fill="none" stroke="var(--line)" stroke-width="2"/></svg>
+    <h2>La tavola è ancora vuota</h2>
+    <p class="muted">Incolla il menù della settimana nella sezione Dieta: APParecchio ti dirà cosa preparare a ogni pasto e cosa comprare.</p>
+    ${S.stato==='offline'?'<p class="notice">Non riesco a raggiungere l\'archivio condiviso: i dati potrebbero non essere aggiornati.</p>':''}
+    <button class="btn primary" data-go="dieta" style="margin-top:8px">Inserisci la dieta</button>
+    ${S.settCol && S.stato!=='loading' ? `<p class="muted" style="margin:14px 0 6px">Oppure riprendi le diete da un file di backup:</p>${S.importando?'<p class="status">Sto caricando…</p>':'<label class="btn" for="file-backup" style="display:inline-block">Carica un backup (.json)</label><input type="file" id="file-backup" accept=".json,application/json" hidden>'}`:''}</div>`;
+}
+const ICONA_RICETTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h12v1.5a6 6 0 0 1-12 0z"/><path d="M4 13.5h16M9 9.5c0-1.5 1-1.5 1-3M13 9.5c0-1.5 1-1.5 1-3"/></svg>';
+
+function vistaOggi(){
+  if(!haDieta()) return vistaVuota();
+  const now=new Date(), f=focusAdesso(now), giorni=giorniOggi(now), oggiIso=iso(now);
+  const selIso = giorni.some(d=>iso(d)===S.giornoSel) ? S.giornoSel : (giorni.some(d=>iso(d)===oggiIso) ? oggiIso : iso(giorni[0]));
+  const selD=daIso(selIso), isToday=selIso===oggiIso, g=giornoData(selD);
+  let html = avviso(now);
+  if(f){
+    const p=pastoData(f.data,f.tipo);
+    const quando = f.oggi ? 'Oggi' : f.domani ? 'Domani' : `${GIORNI[f.data.getDay()]} ${f.data.getDate()}`;
+    html += `<section class="focus" aria-label="Da preparare adesso">
+      <div class="eyebrow">Da preparare · ${quando} · ${p.label}</div>
+      <h2>${esc(titoloPasto(p))}</h2>
+      <div class="meta num"><span>ore ${p.ora}</span>${p.kcal?`<span>≈ ${p.kcal} kcal a persona</span>`:''}<span>${aTavola(f.data,p)}</span>${p.speciale?'<span>solo per questo giorno</span>':''}</div>
+      ${libero(p) ? `<div class="ing" style="padding:12px 14px">${noteHtml(p)||'<span class="muted">Nessun ingrediente da preparare.</span>'}</div>`
+                  : `<div class="ing">${tabellaVoci(p,personePer(f.data,p))}</div>${noteHtml(p).replace('class="notes"','class="notes" style="color:inherit;opacity:.9"')}`}
+      ${!libero(p) && S.sample ? `<button class="btn ricetta-btn" data-ricetta="${iso(f.data)}:${f.tipo}">${ICONA_RICETTA}Ricetta proposta</button>`:''}
+    </section>`;
+  }
+  html += `<div class="sec-h"><h3>${isToday?'La giornata di oggi':GIORNI[selD.getDay()]+' '+selD.getDate()}</h3><span class="label num">${totaleKcal(g)?'≈ '+totaleKcal(g)+' kcal':''}</span></div>`;
+  html += `<div class="chips" role="group" aria-label="Scegli il giorno">${giorni.map(d=>`<button class="chip num" data-day="${iso(d)}" aria-pressed="${iso(d)===selIso}">${GIORNI_BREVI[d.getDay()]} ${d.getDate()}${iso(d)===oggiIso?'<span class="dot" aria-label="oggi"></span>':''}</button>`).join('')}</div>`;
+  if(!g || !g.pasti.length){ html += `<p class="notice">Nessun pasto inserito per ${GIORNI[selD.getDay()].toLowerCase()}.</p>`; }
+  else {
+    const m=minuti(now);
+    html += `<div class="card" style="padding:0 14px"><div class="tl">${g.pasti.map(p=>{
+      const passato = isToday && m >= TIPI[p.tipo].fine;
+      const adesso = f && f.oggi && iso(f.data)===selIso && f.tipo===p.tipo;
+      return `<button class="${passato?'passato':''} ${adesso?'adesso':''}" data-open="${selIso}:${p.tipo}">
+        <span class="ora num ${adesso?'ora-now':''}">${p.ora}</span>
+        <span class="tit"><small>${p.label}${adesso?' · adesso':''}${regola(selD,p)?' · '+personePer(selD,p)+' a tavola':''}</small><span>${esc(titoloPasto(p))}</span></span>
+        ${p.kcal?`<span class="kcal num">${p.kcal}</span>`:'<span></span>'}</button>`; }).join('')}</div></div>`;
+  }
+  return html;
+}
+
+function cicliDisponibili(now){
+  const s=new Set(S.settimane.map(w=>w.inizio)); s.add(iso(inizioCiclo(now)));
+  return [...s].sort();
+}
+function vistaSettimana(){
+  if(!haDieta()) return vistaVuota();
+  const now=new Date(), f=focusAdesso(now), oggiIso=iso(now);
+  const cicli=cicliDisponibili(now), corrente=iso(inizioCiclo(now));
+  const sel = cicli.includes(S.settSel) ? S.settSel : corrente;
+  const giorni = sel===corrente ? giorniCiclo(now) : [0,1,2,3,4,5,6].map(i=>addDays(daIso(sel),i));
+  const tipo = S.filtroTipo ?? (f?f.tipo:'pranzo');
+  const tipiPresenti = ORDINE.filter(t=>giorni.some(d=>{ const g=giornoData(d); return g && g.pasti.some(p=>p.tipo===t) }));
+  let html = avviso(now);
+  if(cicli.length>1) html += `<div class="chips" role="group" aria-label="Scegli la settimana">${cicli.map(c=>`<button class="chip num" data-sett="${c}" aria-pressed="${c===sel}">${settimanaTesto(c)}${c===corrente?'<span class="dot" aria-label="settimana in corso"></span>':''}</button>`).join('')}</div>`;
+  const salvata = S.settimane.some(w=>w.inizio===sel);
+  html += `<div class="sec-h"><h3>Settimana ${settimanaTesto(sel)}</h3><span class="label">kcal a persona</span></div>
+    ${salvata?'':'<p class="notice warn" style="margin:0">Per questa settimana non c\'è una dieta nuova: ripeto l\'ultima inserita.</p>'}
+    <div class="chips" role="group" aria-label="Filtra per pasto"><button class="chip" data-tipo="tutti" aria-pressed="${tipo==='tutti'}">Tutti</button>${
+      tipiPresenti.map(t=>`<button class="chip" data-tipo="${t}" aria-pressed="${tipo===t}">${TIPI[t].label}</button>`).join('')}</div>`;
+  html += '<div class="stack">';
+  for(const d of giorni){
+    const g=giornoData(d); if(!g) continue;
+    const di=iso(d), isOggi=di===oggiIso;
+    html += `<article class="card day"><div class="day-h"><h3>${GIORNI[d.getDay()]} <span class="num muted" style="font-weight:500">${d.getDate()}</span>${isOggi?'<span class="oggi">oggi</span>':''}</h3><span class="muted num" style="font-size:13px">${totaleKcal(g)?'≈ '+totaleKcal(g)+' kcal':''}</span></div>`;
+    if(tipo==='tutti'){
+      html += g.pasti.map(p=>`<button class="mini" data-open="${di}:${p.tipo}"><span class="t">${p.label}</span><span class="n">${esc(titoloPasto(p))}${regola(d,p)?` <span class="muted" style="font-size:12px">· ${personePer(d,p)} a tavola</span>`:''}</span><span class="k num">${p.kcal||''}</span></button>`).join('');
+    } else {
+      const p=g.pasti.find(x=>x.tipo===tipo);
+      if(!p) html += '<p class="muted" style="margin:0">Nessun pasto di questo tipo.</p>';
+      else html += `<div class="row" style="justify-content:space-between;margin-bottom:4px"><strong>${esc(titoloPasto(p))}</strong>${p.kcal?`<span class="kcal num">≈ ${p.kcal} kcal</span>`:''}</div>${regola(d,p)?`<p class="muted" style="margin:0 0 2px;font-size:13px">A tavola: ${aTavola(d,p)}</p>`:''}${tabellaVoci(p,personePer(d,p))}${noteHtml(p)}
+        ${!libero(p) && S.sample ? `<button class="btn ghost" data-ricetta="${di}:${p.tipo}" style="margin-top:6px">${ICONA_RICETTA} Ricetta proposta</button>`:''}`;
+    }
+    html += '</article>';
+  }
+  return html + '</div>';
+}
+
+/* Spesa */
+function daDefault(){ const now=new Date(); return (giornoData(now) && minuti(now) < TIPI.cena.fine) ? 'oggi' : 'domani' }
+function inizioSpesa(daOggi){
+  const now=new Date(); let start = daOggi ? now : addDays(now,1);
+  let spostata=false;
+  const primo = S.settimane[0] && daIso(S.settimane[0].inizio);
+  if(primo && diffG(start,primo)<0){
+    let vuoto=true; for(let d=new Date(start); diffG(d,primo)<0; d=addDays(d,1)) if(giornoData(d)) vuoto=false;
+    if(vuoto){ start=primo; spostata=true; }
+  }
+  return {start, spostata, conOrario: daOggi && !spostata};
+}
+function pastiNelPeriodo(daOggi, n){
+  const m=minuti(new Date()), {start,conOrario}=inizioSpesa(daOggi), out=[];
+  for(let i=0;i<n;i++){
+    const d=addDays(start,i), g=giornoData(d); if(!g) continue;
+    for(const p of g.pasti){ if(conOrario && i===0 && m >= TIPI[p.tipo].fine) continue; out.push({data:d, dow:d.getDay(), p}); }
+  }
+  return out;
+}
+function categoria(nome){ const n=norm(nome); for(const [c,keys] of CATEGORIE) if(keys.some(k=>n.includes(k))) return c; return 'Altro' }
+function listaSpesa(daOggi,n){
+  const mappa={};
+  for(const {data,dow,p} of pastiNelPeriodo(daOggi,n)){
+    const N=personePer(data,p); if(!N) continue;
+    for(const v of p.voci){
+      const key=chiaveSpesa(v.nome);
+      const it = mappa[key] || (mappa[key]={key, nome:cap(key), qt:{}, qb:0, usi:[]});
+      if(v.qta==null) it.qb++; else it.qt[v.unita]=(it.qt[v.unita]||0)+v.qta*N;
+      it.usi.push(GIORNI_BREVI[dow]+' '+p.label.toLowerCase()+(N!==S.persone?` (${N})`:''));
+    }
+  }
+  const per={};
+  Object.values(mappa).forEach(it=>{ (per[categoria(it.nome)] ||= []).push(it) });
+  Object.values(per).forEach(a=>a.sort((x,y)=>x.nome.localeCompare(y.nome,'it')));
+  return [...CATEGORIE.map(c=>c[0]),'Altro'].filter(c=>per[c]).map(c=>[c,per[c]]);
+}
+function qtTesto(it){
+  const parti = Object.entries(it.qt).map(([u,q])=>fmtQ(q,u));
+  if(it.qb) parti.push(parti.length ? '+ q.b.' : 'q.b.');
+  return parti.join(' ');
+}
+function vistaSpesa(){
+  if(!haDieta()) return vistaVuota();
+  const da = S.spesa.da ?? daDefault();
+  if(!S.spesa.giorni){
+    const {start,spostata}=inizioSpesa(da==='oggi');
+    return `<section class="card ask"><div class="label">Spesa</div>
+      <h2 style="margin-top:6px">Per quanti giorni vuoi fare la spesa?</h2>
+      <p class="muted" style="margin:8px 0 0">Calcolo le quantità per ${S.persone} persone, solo per i pasti dei giorni che scegli.</p>
+      <div class="seg" role="group" aria-label="A partire da"><button data-da="oggi" aria-pressed="${da==='oggi'}">Da oggi</button><button data-da="domani" aria-pressed="${da==='domani'}">Da domani</button></div>
+      <div class="ngrid num" role="group" aria-label="Numero di giorni">${[1,2,3,4,5,6,7].map(n=>`<button data-giorni="${n}" aria-label="${n} giorni">${n}</button>`).join('')}</div>
+      <p class="muted" style="font-size:13px;margin:12px 0 0">${spostata ? `La dieta inizia ${dataBreve(start)}: conto i giorni da lì.` : da==='oggi' ? 'Da oggi include solo i pasti che non sono ancora passati.' : `Si parte da ${dataBreve(start)}.`}</p>
+    </section>`;
+  }
+  const n=S.spesa.giorni, daOggi=da==='oggi';
+  const pasti=pastiNelPeriodo(daOggi,n), lista=listaSpesa(daOggi,n);
+  const ini=pasti[0], fin=pasti[pasti.length-1];
+  const desc = ini ? `${GIORNI_BREVI[ini.dow]} ${ini.data.getDate()} (${ini.p.label.toLowerCase()}) → ${GIORNI_BREVI[fin.dow]} ${fin.data.getDate()} (${fin.p.label.toLowerCase()})` : '';
+  const tot=lista.reduce((s,[,a])=>s+a.length,0), fatti=lista.reduce((s,[,a])=>s+a.filter(i=>S.spunte[i.key]).length,0);
+  let html = `<section class="card range"><div><div class="label">Spesa per ${n} ${n===1?'giorno':'giorni'} · ${S.persone} persone</div><strong class="num">${desc}</strong>
+    <div class="muted num" style="font-size:13px">${pasti.length} pasti · ${fatti}/${tot} presi${S.spunteCol?' · spunte condivise in famiglia':''}</div>
+    ${(()=>{ const r=pasti.filter(x=>regola(x.data,x.p)); return r.length?`<div class="muted num" style="font-size:13px">Con meno persone: ${r.map(x=>GIORNI_BREVI[x.dow]+' '+x.p.label.toLowerCase()+' ('+personePer(x.data,x.p)+')').join(', ')}</div>`:'' })()}</div>
+    <div class="row"><button class="btn" id="cambia-giorni">Cambia giorni</button></div></section>`;
+  if(S.spunteErr) html += `<p class="notice warn">${esc(S.spunteErr)}</p>`;
+  if(!lista.length) return html + '<p class="notice">In questo periodo non ci sono ingredienti da comprare.</p>';
+  html += lista.map(([c,items])=>`<section class="card cat"><h3>${c}</h3>${items.map(it=>`
+    <label class="item ${S.spunte[it.key]?'done':''}"><input type="checkbox" id="sp-${slug(it.key)}" data-spunta="${esc(it.key)}" ${S.spunte[it.key]?'checked':''}>
+      <span class="nm">${esc(it.nome)}<span class="src">${esc([...new Set(it.usi)].join(' · '))}</span></span>
+      <span class="qt num">${qtTesto(it)}${it.qb?`<small>q.b. per ${it.qb} ${it.qb===1?'pasto':'pasti'}</small>`:''}</span></label>`).join('')}</section>`).join('');
+  html += `<div class="row" style="justify-content:space-between"><button class="btn primary" id="copia">Copia la lista</button><button class="btn ghost" id="azzera">Togli tutte le spunte</button></div><p class="status" id="copia-stato" aria-live="polite"></p>`;
+  return html;
+}
+function testoLista(){
+  const l=listaSpesa((S.spesa.da ?? daDefault())==='oggi', S.spesa.giorni);
+  return `APParecchio · spesa per ${S.spesa.giorni} giorni (${S.persone} persone)\n\n` + l.map(([c,a])=>c.toUpperCase()+'\n'+a.map(i=>`- ${i.nome}: ${qtTesto(i)}`).join('\n')).join('\n\n');
+}
+
+/* Dieta */
+/* Dieta */
+function riepilogo(testo, inizio){
+  const r=parseDieta(testo, inizio), a=r.settimana, base=inizio?daIso(inizio):null;
+  const extra = Object.keys(r.datati).sort().map(k=>{ const g=r.datati[k], d=daIso(k); return `<div><b>${dataBreve(d)}</b>${g.pasti.map(p=>p.label.toLowerCase()).join(', ')} · solo quel giorno</div>`; }).join('');
+  const ordine = base ? [0,1,2,3,4,5,6].map(i=>addDays(base,i)) : [1,2,3,4,5,6,0].map(d=>({getDay:()=>d}));
+  const html = ordine.filter(d=>a[d.getDay()]).map(d=>{ const g=a[d.getDay()]; return `<div><b>${GIORNI[d.getDay()]}${base?' '+d.getDate():''}</b>${g.pasti.length} pasti · ${totaleKcal(g)} kcal</div>`; }).join('');
+  return (extra+html) || '<div style="grid-column:1/-1">Nessun giorno riconosciuto. Ogni giorno deve iniziare con il suo nome su una riga (es. LUNEDÌ).</div>';
+}
+function bozzaNuova(now){
+  const last=S.settimane[S.settimane.length-1];
+  return {id:null, inizio: last ? iso(addDays(daIso(last.inizio),7)) : iso(lunediProssimo(now)), testo:'', nuova:true};
+}
+function bozzaDi(w){ return {id:w.inizio, inizio:w.inizio, testo:w.testo, nuova:false} }
+function bozzaDefault(now){
+  const w=settimanaPer(now) || S.settimane[0];
+  return w ? bozzaDi(w) : bozzaNuova(now);
+}
+function vistaDieta(){
+  const now=new Date();
+  if(!S.edit) S.edit=bozzaDefault(now);
+  const e=S.edit, w=S.settimane.find(x=>x.inizio===e.id);
+  const quando = w && w.aggiornata ? new Date(w.aggiornata) : null;
+  const corrente = settimanaPer(now);
+  const msg = S.msgDieta ? `<p class="status ${S.msgDieta.cls}" id="salva-stato" aria-live="polite">${esc(S.msgDieta.t)}</p>` : '<p class="status" id="salva-stato" aria-live="polite"></p>';
+  return `<div class="sec-h"><h3>Diete delle settimane</h3><span class="label">${S.settimane.length} salvate</span></div>
+  <div class="chips" role="group" aria-label="Scegli la settimana da modificare">${S.settimane.map(x=>`<button class="chip num" data-modifica="${x.inizio}" aria-pressed="${x.inizio===e.id}">${settimanaTesto(x.inizio)}${corrente===x?'<span class="dot" aria-label="in corso"></span>':''}</button>`).join('')}
+    <button class="chip" id="nuova-sett" aria-pressed="${!!e.nuova}">+ Nuova settimana</button></div>
+  <div class="card settimana-box">
+    <div class="row" style="justify-content:space-between"><h3 style="font-size:18px">${e.nuova?'Nuova settimana':'Settimana '+settimanaTesto(e.id)}</h3>${quando?`<span class="label">aggiornata ${quando.getDate()} ${MESI[quando.getMonth()]}</span>`:''}</div>
+    <label class="label" for="inizio-dieta">La settimana inizia</label>
+    <div class="row"><input type="date" id="inizio-dieta" value="${e.inizio}"></div>
+    <p class="muted" style="font-size:13px;margin:0" id="settimana-nota">${notaSettimana(e.inizio)}</p>
+  </div>
+  <p class="muted" style="margin:0">Incolla o modifica il menù: giorno, pasto, titolo, ingredienti con le quantità <b>a persona</b> (uno per riga con l'asterisco) e le kcal. Per un pasto valido solo in una data, scrivi il giorno con il numero (es. <b>DOMENICA 8 NOVEMBRE</b>) e sotto solo i pasti che cambiano.</p>
+  <label class="label" for="testo-dieta">Testo della dieta</label>
+  <textarea id="testo-dieta" spellcheck="false" placeholder="LUNEDÌ&#10;Colazione&#10;* Yogurt greco 150 g&#10;* Pera&#10;≈ 340 kcal&#10;Pranzo&#10;Pollo e broccoli&#10;* Pollo 150 g&#10;…">${esc(e.testo)}</textarea>
+  <div class="row" style="justify-content:space-between">
+    ${e.nuova ? '<span></span>' : e.conferma
+      ? `<div class="row"><span class="status err">Eliminare la settimana ${settimanaTesto(e.id)}?</span><button class="btn" id="elimina-si">Elimina</button><button class="btn ghost" id="elimina-no">Annulla</button></div>`
+      : '<button class="btn ghost" id="elimina">Elimina settimana</button>'}
+    <button class="btn primary" id="salva">Salva la dieta</button>
+  </div>
+  ${msg}
+  <div class="label">Cosa ho capito</div>
+  <div class="parsed num">${riepilogo(e.testo, e.inizio)}</div>
+  ${vistaTavola()}
+  ${vistaCodiceFamiglia()}`;
+}
+function notaSettimana(inizio){
+  if(!inizio) return '';
+  const i=daIso(inizio), f=addDays(i,6);
+  const altra = S.settimane.find(w=>w.inizio===inizio && (!S.edit || w.inizio!==S.edit.id));
+  return `Dal ${GIORNI[i.getDay()].toLowerCase()} ${i.getDate()} ${MESI[i.getMonth()]} a ${GIORNI[f.getDay()].toLowerCase()} ${f.getDate()} ${MESI[f.getMonth()]}.`
+    + (altra ? ' Attenzione: esiste già una settimana con questa data, salvando la sostituisci.' : ' Dopo l\'ultima settimana inserita, finché non ne aggiungi una nuova, si ripete quella.');
+}
+function vistaTavola(){
+  const tipiOpz = ORDINE.map(t=>`<option value="${t}" ${t==='pranzo'?'selected':''}>${TIPI[t].label}</option>`).join('');
+  const giorniOpz = [1,2,3,4,5,6,0].map(d=>`<option value="${d}">${GIORNI[d]}</option>`).join('');
+  return `<section class="card settimana-box" aria-labelledby="tavola-h">
+    <h3 id="tavola-h" style="font-size:18px">Chi è a tavola</h3>
+    <p class="muted" style="margin:0;font-size:13px">Vale per tutte le settimane.</p>
+    <div class="row"><span class="label">Persone in famiglia</span><div class="stepper"><button id="meno" aria-label="Una persona in meno">−</button><span class="num" id="np">${S.persone}</span><button id="piu" aria-label="Una persona in più">+</button></div></div>
+    <div class="label" style="margin-top:6px">Pasti fuori casa, ogni settimana</div>
+    ${S.assenze.length ? `<div class="regole">${S.assenze.map((r,i)=>`<div class="regola"><span><b>${GIORNI[r.dow]} · ${TIPI[r.tipo].label}</b><small>${Math.max(0,S.persone-(r.fuori||1))} a tavola${r.nota?' · '+esc(r.nota):''}</small></span><button class="btn ghost" data-togli="${i}">Togli</button></div>`).join('')}</div>`
+      : '<p class="muted" style="margin:0;font-size:13px">Nessuno: a ogni pasto cucini per tutta la famiglia.</p>'}
+    <div class="regola-form">
+      <label><span class="label">Giorno</span><select id="r-giorno">${giorniOpz}</select></label>
+      <label><span class="label">Pasto</span><select id="r-tipo">${tipiOpz}</select></label>
+      <label><span class="label">Fuori</span><select id="r-fuori">${Array.from({length:Math.max(1,S.persone-1)},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}</select></label>
+      <label class="largo"><span class="label">Chi e dove</span><input id="r-nota" type="text" placeholder="es. la bambina a mensa" maxlength="60"></label>
+      <button class="btn" id="r-aggiungi">Aggiungi</button>
+    </div>
+    <p class="status" id="tavola-stato" aria-live="polite"></p>
+  </section>`;
+}
+
+/* ---------- Dati ---------- */
+function costruisci(doc){ return {inizio:doc.inizio, testo:doc.testo||'', aggiornata:doc.aggiornata||null, r:parseDieta(doc.testo||'', doc.inizio)} }
+function impostaSettimane(docs){
+  S.settimane = docs.filter(d=>d && d.inizio).map(costruisci).sort((a,b)=>a.inizio<b.inizio?-1:1);
+  S.datati = {}; S.settimane.forEach(w=>Object.assign(S.datati, w.r.datati));
+  S.stato = haDieta() ? 'ok' : 'empty';
+  LS.set('settimane', S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})));
+}
+function impostaFamiglia(doc){
+  S.persone = (doc && doc.persone) || 3;
+  S.assenze = doc && Array.isArray(doc.assenze) ? doc.assenze : [];
+  LS.set('famiglia', {persone:S.persone, assenze:S.assenze});
+}
+let codaFam=Promise.resolve();
+function salvaFamiglia(){
+  const doc={persone:S.persone, assenze:S.assenze};
+  LS.set('famiglia', doc);
+  if(!S.famRef) return;
+  codaFam = codaFam.then(()=>S.famRef.set(doc)).then(()=>{ const st=$('#tavola-stato'); if(st){ st.textContent='Salvato per tutta la famiglia.'; st.className='status ok'; } })
+    .catch(()=>{ const st=$('#tavola-stato'); if(st){ st.textContent='Salvato solo su questo dispositivo: non riesco ad aggiornare i dati di famiglia.'; st.className='status err'; } });
+}
+async function salvaSettimana(){
+  const e=S.edit; if(!e) return;
+  if(!nGiorni(parseDieta(e.testo, e.inizio))){ S.msgDieta={t:'Non ho riconosciuto nessun giorno: controlla che ogni giorno inizi con il suo nome (es. LUNEDÌ).', cls:'err'}; return render(); }
+  const doc={inizio:e.inizio, testo:e.testo, aggiornata:new Date().toISOString()};
+  const vecchio = e.id && e.id!==e.inizio ? e.id : null;
+  const altre = S.settimane.filter(w=>w.inizio!==e.inizio && w.inizio!==vecchio).map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata}));
+  impostaSettimane([...altre, doc]);
+  S.edit = bozzaDi(S.settimane.find(w=>w.inizio===e.inizio));
+  S.msgDieta={t:'Salvataggio…', cls:''}; render();
+  if(S.settCol){
+    try{ await S.settCol.doc(doc.inizio).set(doc); if(vecchio) await S.settCol.doc(vecchio).delete();
+      S.msgDieta={t:`Dieta della settimana ${settimanaTesto(doc.inizio)} salvata: la vede tutta la famiglia.`, cls:'ok'}; }
+    catch(err){ S.msgDieta={t:'Salvata solo su questo dispositivo: non riesco ad aggiornare la dieta di famiglia.', cls:'err'}; }
+  } else S.msgDieta={t:'Salvata su questo dispositivo.', cls:'ok'};
+  if(S.view==='dieta') render();
+}
+async function eliminaSettimana(){
+  const e=S.edit; if(!e || !e.id) return;
+  const id=e.id;
+  impostaSettimane(S.settimane.filter(w=>w.inizio!==id).map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})));
+  S.edit=null; S.msgDieta={t:`Settimana ${settimanaTesto(id)} eliminata.`, cls:'ok'};
+  render();
+  if(S.settCol){ try{ await S.settCol.doc(id).delete() }catch(err){ S.msgDieta={t:'Eliminata solo su questo dispositivo: non riesco ad aggiornare la dieta di famiglia.', cls:'err'}; if(S.view==='dieta') render(); } }
+}
+/* ---------- Render ---------- */
+function render(){
+  document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current', b.dataset.view===S.view?'page':'false'));
+  $('#persone-n').textContent = S.persone;
+  if(!S.codice){ app.innerHTML=vistaCodice(); return; }
+  app.innerHTML = `<div class="view stack">${S.erroreAvvio?`<p class="notice warn">${esc(S.erroreAvvio)}</p>`:''}${({oggi:vistaOggi, settimana:vistaSettimana, spesa:vistaSpesa, dieta:vistaDieta})[S.view]()}</div>`;
+}
+function vai(v){ if(!VIEWS.includes(v)) v='oggi'; if(v==='spesa' && S.view!=='spesa') S.spesa.giorni=null; S.view=v; if(location.hash!=='#'+v) history.replaceState(null,'','#'+v); render(); window.scrollTo(0,0); }
+
+/* ---------- Scheda pasto e ricetta ---------- */
+let ricettaCtl=null, ricettaAperta=null;
+function apriPasto(di,tipo,conRicetta){
+  const d=daIso(di), p=pastoData(d,tipo); if(!p) return;
+  ricettaAperta={di,tipo};
+  $('#sheet-body').innerHTML = `<div class="label">${GIORNI[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]} · ${p.label} · ore ${p.ora}</div>
+    <div class="row" style="justify-content:space-between;margin:6px 0 10px"><h2 id="sheet-title">${esc(titoloPasto(p))}</h2>${p.kcal?`<span class="kcal num">≈ ${p.kcal} kcal a persona</span>`:''}</div>
+    ${regola(d,p)||p.speciale?`<p class="muted" style="margin:0 0 6px;font-size:13px">A tavola: ${aTavola(d,p)}${p.speciale?' · pasto valido solo per questo giorno':''}</p>`:''}
+    ${tabellaVoci(p,personePer(d,p))}${noteHtml(p)}
+    ${libero(p)?'':`<div class="ricetta" id="ricetta">${S.sample||S.ricetteCol?`<button class="btn" data-ricetta="${di}:${tipo}">${ICONA_RICETTA} Ricetta proposta</button>`:''}</div>`}`;
+  $('#sheet').hidden=false; $('#sheet-close').focus();
+  if(conRicetta && !libero(p)) mostraRicetta(di,tipo,false);
+}
+function chiudi(){ $('#sheet').hidden=true; if(ricettaCtl){ ricettaCtl.abort(); ricettaCtl=null } }
+function idRicetta(d,p){ return slug(GIORNI_BREVI[d.getDay()]+'-'+p.tipo+'-'+titoloPasto(p)+'-'+personePer(d,p)) }
+function promptRicetta(p,N){
+  return `Sei un cuoco di casa italiano attento alla dieta. Proponi una ricetta semplice per "${titoloPasto(p)}" (${p.label.toLowerCase()}) per ${N} persone.
+
+Ingredienti previsti dalla dieta, quantità TOTALI per ${N} persone:
+${p.voci.map(v=>`- ${v.nome}: ${v.qta==null?'quanto basta':fmtQ(v.qta*N,v.unita)}`).join('\n')}
+${p.kcal?`Calorie previste: circa ${p.kcal} kcal a persona.`:''}
+
+Regole:
+- Usa questi ingredienti con queste quantità; dove è "quanto basta" suggerisci tu una quantità ragionevole per ${N} persone.
+- Puoi aggiungere solo erbe, spezie, sale, aglio, cipolla, limone, aceto e al massimo 1 cucchiaino di olio extravergine a persona (indicalo).
+- Niente burro, panna, zucchero o fritture. Tempi realistici, passaggi brevi e pratici.
+
+Rispondi in italiano, senza introduzione né conclusione, esattamente in questo formato:
+## Tempi
+una riga con preparazione e cottura
+## Ingredienti per ${N}
+- un ingrediente per riga con la quantità
+## Preparazione
+1. un passaggio per riga
+## Consiglio
+una riga`;
+}
+function azioniRicetta(di,tipo){
+  return `<div class="row ricetta-azioni">${S.sample?`<button class="btn" data-rigenera="${di}:${tipo}">Proponine un'altra</button>`:''}</div>`;
+}
+async function mostraRicetta(di,tipo,nuova){
+  const box=$('#ricetta'); if(!box) return;
+  const d=daIso(di), p=pastoData(d,tipo); if(!p) return;
+  const id=idRicetta(d,p);
+  if(!nuova && S.ricetteCol){
+    box.innerHTML='<p class="muted">Cerco la ricetta salvata…</p>';
+    try{ const s=await S.ricetteCol.doc(id).get();
+      if(s.exists && s.data().testo){ if(ricettaAperta.di!==di) return; box.innerHTML='<div class="label">Ricetta proposta</div>'+md(s.data().testo)+azioniRicetta(di,tipo); return; }
+    }catch(e){}
+  }
+  if(!S.sample){ box.innerHTML='<p class="notice">Le ricette proposte non sono disponibili in questa visualizzazione.</p>'; return; }
+  ricettaCtl && ricettaCtl.abort();
+  const ctl = ricettaCtl = new AbortController();
+  box.innerHTML='<div class="label">Ricetta proposta</div><div id="ricetta-testo"><p class="muted">Sto pensando alla ricetta…</p></div><div class="row ricetta-azioni"><button class="btn" id="ricetta-stop">Interrompi</button></div>';
+  const out=$('#ricetta-testo');
+  try{
+    const {text} = await S.sample(promptRicetta(p,personePer(d,p)), {signal:ctl.signal, modelTier:'default', cache:!nuova, onText:({text})=>{ out.innerHTML=md(text) }});
+    if(ctl!==ricettaCtl) return;
+    out.innerHTML=md(text);
+    box.querySelector('.ricetta-azioni').outerHTML=azioniRicetta(di,tipo);
+    if(S.ricetteCol){ try{ await S.ricetteCol.doc(id).set({titolo:titoloPasto(p), testo:text, creata:new Date().toISOString()}) }catch(e){} }
+  }catch(e){
+    if(ctl!==ricettaCtl) return;
+    const msg = {not_granted:'Le ricette proposte non sono attive: controlla Firebase AI Logic nella console.', rate_limited:'Troppe richieste in poco tempo: riprova tra qualche minuto.', cancelled:'Ricetta interrotta.'}[e && e.code] || 'Non sono riuscito a scrivere la ricetta. Riprova tra poco.';
+    out.innerHTML = (e && e.text ? md(e.text) : '') + `<p class="notice">${msg}</p>`;
+    const az=box.querySelector('.ricetta-azioni'); if(az) az.outerHTML = (e && e.code==='not_granted') ? '' : azioniRicetta(di,tipo);
+  }finally{ if(ctl===ricettaCtl) ricettaCtl=null; }
+}
+
+/* ---------- Spunte condivise ---------- */
+async function spunta(key,on){
+  if(on) S.spunte[key]=1; else delete S.spunte[key];
+  S.spunteErr=''; render();
+  if(S.spunteCol){
+    const ref=S.spunteCol.doc(slug(key));
+    try{ on ? await ref.set({nome:key, preso:true, quando:new Date().toISOString()}) : await ref.delete(); }
+    catch(e){ S.spunteErr='Questa spunta è salvata solo qui: non riesco ad aggiornare la lista di famiglia.'; render(); }
+  } else LS.set('spunte',S.spunte);
+}
+async function azzera(){
+  const keys=Object.keys(S.spunte); S.spunte={}; S.spunteErr=''; render();
+  if(!S.spunteCol){ LS.set('spunte',S.spunte); return; }
+  for(const k of keys){ try{ await S.spunteCol.doc(slug(k)).delete() }catch(e){ S.spunteErr='Non sono riuscito a togliere tutte le spunte dalla lista di famiglia.'; } }
+  if(S.spunteErr) render();
+}
+
+/* ---------- Eventi ---------- */
+document.querySelector('.tabs').addEventListener('click',e=>{ const b=e.target.closest('[data-view]'); if(b) vai(b.dataset.view) });
+$('#sheet-close').addEventListener('click',chiudi);
+$('#sheet').addEventListener('click',e=>{
+  if(e.target.id==='sheet') return chiudi();
+  const b=e.target.closest('button'); if(!b) return;
+  if(b.dataset.ricetta){ const [di,t]=b.dataset.ricetta.split(':'); return mostraRicetta(di,t,false); }
+  if(b.dataset.rigenera){ const [di,t]=b.dataset.rigenera.split(':'); return mostraRicetta(di,t,true); }
+  if(b.id==='ricetta-stop' && ricettaCtl) ricettaCtl.abort();
+});
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('#sheet').hidden) chiudi() });
+window.addEventListener('hashchange',()=>{ const v=location.hash.slice(1); if(v!==S.view) vai(v) });
+
+app.addEventListener('click',async e=>{
+  const t=e.target.closest('button'); if(!t) return;
+  if(t.dataset.go){ if(t.dataset.nuova){ S.edit=bozzaNuova(new Date()); S.msgDieta=null; } return vai(t.dataset.go); }
+  if(t.dataset.day){ S.giornoSel=t.dataset.day; return render(); }
+  if(t.dataset.sett){ S.settSel=t.dataset.sett; return render(); }
+  if(t.dataset.open){ const [d,tp]=t.dataset.open.split(':'); return apriPasto(d,tp,false); }
+  if(t.dataset.ricetta){ const [d,tp]=t.dataset.ricetta.split(':'); return apriPasto(d,tp,true); }
+  if(t.dataset.tipo){ S.filtroTipo=t.dataset.tipo; return render(); }
+  if(t.dataset.da){ S.spesa.da=t.dataset.da; return render(); }
+  if(t.dataset.giorni){ S.spesa.giorni=+t.dataset.giorni; render(); return window.scrollTo(0,0); }
+  if(t.id==='cambia-giorni'){ S.spesa.giorni=null; return render(); }
+  if(t.id==='azzera') return azzera();
+  if(t.dataset.modifica){ const w=S.settimane.find(x=>x.inizio===t.dataset.modifica); if(w){ S.edit=bozzaDi(w); S.msgDieta=null; } return render(); }
+  if(t.id==='nuova-sett'){ S.edit=bozzaNuova(new Date()); S.msgDieta=null; return render(); }
+  if(t.id==='elimina'){ S.edit.conferma=true; return render(); }
+  if(t.id==='elimina-no'){ S.edit.conferma=false; return render(); }
+  if(t.id==='elimina-si') return eliminaSettimana();
+  if(t.id==='copia'){
+    const txt=testoLista(), st=$('#copia-stato');
+    try{ await navigator.clipboard.writeText(txt); st.textContent='Lista copiata: incollala dove vuoi.'; st.className='status ok'; }
+    catch(err){ st.className='status'; st.innerHTML='Copia non disponibile qui: seleziona il testo qui sotto.<textarea style="min-height:160px;margin-top:8px" readonly>'+esc(txt)+'</textarea>'; st.querySelector('textarea').select(); }
+    return;
+  }
+  if(t.id==='meno'||t.id==='piu'){ S.persone=Math.max(1,Math.min(12,S.persone+(t.id==='piu'?1:-1))); render(); return salvaFamiglia(); }
+  if(t.dataset.togli!==undefined){ S.assenze=S.assenze.filter((_,i)=>i!==+t.dataset.togli); render(); return salvaFamiglia(); }
+  if(t.id==='r-aggiungi'){
+    const r={dow:+$('#r-giorno').value, tipo:$('#r-tipo').value, fuori:+$('#r-fuori').value, nota:$('#r-nota').value.trim()};
+    S.assenze=[...S.assenze.filter(x=>!(x.dow===r.dow&&x.tipo===r.tipo)), r].sort((a,b)=>((a.dow+6)%7)-((b.dow+6)%7)||ORDINE.indexOf(a.tipo)-ORDINE.indexOf(b.tipo));
+    render(); return salvaFamiglia();
+  }
+  if(t.id==='salva') return salvaSettimana();
+});
+app.addEventListener('change',e=>{
+  if(e.target.dataset.spunta!==undefined) return spunta(e.target.dataset.spunta, e.target.checked);
+  if(e.target.id==='inizio-dieta' && e.target.value && S.edit){ S.edit.inizio=e.target.value; S.edit.dirty=true; const n=$('#settimana-nota'); if(n) n.textContent=notaSettimana(S.edit.inizio); aggiornaRiepilogo(); }
+});
+function aggiornaRiepilogo(){ const box=document.querySelector('.parsed'); if(box && S.edit) box.innerHTML=riepilogo(S.edit.testo, S.edit.inizio); }
+let bozzaTimer;
+app.addEventListener('input',e=>{
+  if(e.target.id!=='testo-dieta' || !S.edit) return;
+  S.edit.testo=e.target.value; S.edit.dirty=true; clearTimeout(bozzaTimer); bozzaTimer=setTimeout(aggiornaRiepilogo,300);
+});
+function staScrivendo(){ return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || !!document.activeElement.closest('.regola-form')))) }
+
+/* ---------- Codice di famiglia ---------- */
+function vistaCodice(){
+  return `<section class="card ask" style="margin-top:12px">
+    <div class="label">Benvenuto in APParecchio</div>
+    <h2 style="margin-top:6px">Inserisci il codice di famiglia</h2>
+    <p class="muted" style="margin:8px 0 14px">È la parola d'ordine che condividete in casa: tutti quelli che usano lo stesso codice vedono la stessa dieta e la stessa lista della spesa. Il telefono lo ricorda, non serve reinserirlo.</p>
+    <form id="form-codice" class="stack" style="gap:10px">
+      <label class="label" for="codice">Codice di famiglia</label>
+      <input id="codice" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="es. tavola-novembre-4827" style="font:inherit;font-size:17px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink)">
+      <p class="muted" style="font-size:13px;margin:0">Almeno 12 caratteri: lettere, numeri e trattini. Scegline uno difficile da indovinare.</p>
+      <p class="status err" id="codice-err" aria-live="polite"></p>
+      <button class="btn primary" type="submit">Entra</button>
+    </form></section>`;
+}
+function pulisciCodice(s){ return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') }
+function vistaCodiceFamiglia(){
+  return `<section class="card settimana-box"><h3 style="font-size:18px">Codice di famiglia</h3>
+    <p class="muted" style="margin:0;font-size:13px">Dallo a chi deve usare l'app con voi: lo inserisce al primo accesso.</p>
+    <div class="row"><code class="num" id="codice-attuale" style="font-size:16px;font-weight:700;background:var(--surface-2);padding:6px 10px;border-radius:8px;user-select:all">${esc(S.codice||'')}</code><button class="btn" id="copia-codice">Copia</button></div>
+    ${S.esciConferma ? `<div class="row"><span class="status err">Uscire da questo telefono? Per rientrare servirà il codice.</span><button class="btn" id="esci-si">Esci</button><button class="btn ghost" id="esci-no">Annulla</button></div>`
+      : '<div><button class="btn ghost" id="esci">Esci o cambia codice</button></div>'}
+    <div class="row"><button class="btn" id="scarica-backup">Scarica un backup</button><span class="muted" style="font-size:13px">diete e impostazioni in un file</span></div>
+    <p class="status" id="codice-stato" aria-live="polite"></p></section>`;
+}
+
+/* ---------- Avvio (Firebase) ---------- */
+function adattaDb(fs, base){
+  const docW = ref => ({
+    set: d => F.setDoc(ref, d), delete: () => F.deleteDoc(ref),
+    get: async () => { const s=await F.getDoc(ref); return {exists:s.exists(), data:()=>s.data()}; },
+    onSnapshot: (n,e) => F.onSnapshot(ref, s=>n({exists:s.exists(), data:()=>s.data(), metadata:s.metadata}), e)
+  });
+  const colW = ref => ({
+    doc: id => docW(F.doc(ref, id)),
+    onSnapshot: (n,e) => F.onSnapshot(ref, s=>n({docs:s.docs.map(d=>({id:d.id, data:()=>d.data()})), size:s.size, metadata:s.metadata}), e)
+  });
+  return { collection: p => colW(F.collection(fs, base+'/'+p)), doc: p => docW(F.doc(fs, base+'/'+p)) };
+}
+function adattaGemini(model){
+  return async function(prompt, opts={}){
+    const signal=opts.signal; let text='';
+    try{
+      const r = await model.generateContentStream(prompt);
+      for await (const ch of r.stream){
+        if(signal && signal.aborted) throw {code:'cancelled', text};
+        text += ch.text(); opts.onText && opts.onText({text});
+      }
+      return {text, truncated:false};
+    }catch(e){
+      if(e && e.code==='cancelled') throw e;
+      console.error(e);
+      throw {code: /quota|429|exhausted/i.test(String(e&&e.message)) ? 'rate_limited' : 'error', message:String(e&&e.message||e), text};
+    }
+  };
+}
+let FB=null;
+async function avviaFirebase(){
+  if(FB) return FB;
+  const app = F.initializeApp(CONFIG.firebase);
+  const auth = F.getAuth(app);
+  await F.signInAnonymously(auth);
+  let fs;
+  try{ fs = F.initializeFirestore(app, {localCache: F.persistentLocalCache({tabManager: F.persistentMultipleTabManager()})}); }
+  catch(e){ fs = F.initializeFirestore(app, {}); }
+  let sample=null;
+  if(CONFIG.ricette !== false){
+    try{ const ai=F.getAI(app, {backend:new F.GoogleAIBackend()}); sample=adattaGemini(F.getGenerativeModel(ai, {model: CONFIG.modelloGemini || 'gemini-3.6-flash'})); }
+    catch(e){ console.warn('Ricette non disponibili', e); }
+  }
+  return FB={app, fs, sample};
+}
+async function collega(){
+  const timer=setTimeout(()=>{ if(S.stato==='loading'){ S.stato=haDieta()?'ok':'offline'; render(); } },10000);
+  let fb;
+  try{ fb = await avviaFirebase(); }
+  catch(e){ console.error(e); clearTimeout(timer); S.stato=haDieta()?'ok':'offline'; S.erroreAvvio='Non riesco a collegarmi a Firebase: controlla config.js e che l\'accesso anonimo sia attivo.'; return render(); }
+  S.sample = fb.sample;
+  const db = adattaDb(fb.fs, 'famiglie/'+S.codice);
+  S.settCol=db.collection('settimane'); S.famRef=db.doc('impostazioni/famiglia');
+  S.spunteCol=db.collection('spunte'); S.ricetteCol=db.collection('ricette');
+  S.settCol.onSnapshot(snap=>{
+    if(!snap.metadata.fromCache) clearTimeout(timer);
+    if(snap.size || !snap.metadata.fromCache){
+      impostaSettimane(snap.docs.map(d=>d.data()));
+      if(S.edit && !S.edit.dirty && !S.edit.nuova){ const w=S.settimane.find(x=>x.inizio===S.edit.id); S.edit = w ? bozzaDi(w) : null; }
+    }
+    if(!staScrivendo()) render();
+  }, e=>{ console.error(e); clearTimeout(timer); S.erroreAvvio='Non riesco a leggere i dati di famiglia: controlla le regole di Firestore.'; if(S.stato==='loading') S.stato=haDieta()?'ok':'offline'; render(); });
+  S.famRef.onSnapshot(snap=>{ if(snap.exists){ impostaFamiglia(snap.data()); if(!staScrivendo()) render(); } }, ()=>{});
+  S.spunteCol.onSnapshot(snap=>{
+    const m={}; snap.docs.forEach(d=>{ const x=d.data(); if(x && x.preso && x.nome) m[x.nome]=1; });
+    S.spunte=m; if(S.view==='spesa') render();
+  }, ()=>{ S.spunteErr='Non riesco a leggere le spunte di famiglia: quelle che metti ora restano solo qui.'; S.spunteCol=null; if(S.view==='spesa') render(); });
+}
+async function importaDatiIniziali(){
+  const d=S.datiIniziali; if(!d || !S.settCol) return;
+  S.importando=true; render();
+  try{
+    for(const w of d.settimane) await S.settCol.doc(w.inizio).set(w);
+    if(d.famiglia) await S.famRef.set(d.famiglia);
+    for(const [id,r] of Object.entries(d.ricette||{})) await S.ricetteCol.doc(id).set(r);
+    S.importando=false;
+  }catch(e){ console.error(e); S.importando=false; S.erroreAvvio='Importazione non riuscita: riprova tra poco.'; render(); }
+}
+
+app.addEventListener('change', async e=>{
+  if(e.target.id!=='file-backup' || !e.target.files[0]) return;
+  try{
+    const d=JSON.parse(await e.target.files[0].text());
+    if(!d || !Array.isArray(d.settimane) || !d.settimane.every(w=>w && w.inizio && typeof w.testo==='string')) throw new Error('formato');
+    S.datiIniziali=d; S.erroreAvvio=''; await importaDatiIniziali();
+  }catch(err){ S.erroreAvvio='Questo file non è un backup di APParecchio.'; render(); }
+});
+document.addEventListener('submit', e=>{
+  if(e.target.id!=='form-codice') return;
+  e.preventDefault();
+  const c=pulisciCodice($('#codice').value);
+  if(c.length<12){ $('#codice-err').textContent='Il codice deve avere almeno 12 caratteri (lettere, numeri, trattini).'; return; }
+  S.codice=c; LS.set('codice', c); S.stato='loading';
+  document.querySelector('.tabs').hidden=false; render(); collega();
+});
+app.addEventListener('click', async e=>{
+  const t=e.target.closest('button'); if(!t) return;
+  if(t.id==='scarica-backup'){
+    const dati={settimane:S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})), famiglia:{persone:S.persone, assenze:S.assenze}, ricette:{}};
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(dati,null,1)],{type:'application/json'}));
+    a.download='apparecchio-backup-'+iso(new Date())+'.json'; document.body.appendChild(a); a.click(); a.remove(); return;
+  }
+  if(t.id==='esci'){ S.esciConferma=true; return render(); }
+  if(t.id==='esci-no'){ S.esciConferma=false; return render(); }
+  if(t.id==='esci-si'){ ['codice','settimane','famiglia','spunte'].forEach(k=>{ try{ localStorage.removeItem('apparecchio:'+k) }catch(_){} }); location.reload(); return; }
+  if(t.id==='copia-codice'){ const st=$('#codice-stato'); try{ await navigator.clipboard.writeText(S.codice); st.textContent='Codice copiato.'; st.className='status ok'; }catch(_){ st.textContent='Tieni premuto sul codice per copiarlo.'; st.className='status'; } }
+});
+
+(function init(){
+  const h=location.hash.slice(1); S.view=VIEWS.includes(h)?h:'oggi';
+  if(!CONFIG.firebase || !CONFIG.firebase.apiKey || /INSERISCI/.test(CONFIG.firebase.apiKey)){
+    app.innerHTML='<div class="card empty"><h2>Manca la configurazione</h2><p class="muted">Compila il file config.js con i dati del tuo progetto Firebase (vedi README).</p></div>';
+    document.querySelector('.tabs').hidden=true; return;
+  }
+  S.codice = LS.get('codice', null);
+  if(!S.codice){ document.querySelector('.tabs').hidden=true; app.innerHTML=vistaCodice(); return; }
+  const ls=LS.get('settimane',null); if(Array.isArray(ls) && ls.length) impostaSettimane(ls);
+  const fam=LS.get('famiglia',null); if(fam) impostaFamiglia(fam);
+  render();
+  setInterval(()=>{ if($('#sheet').hidden && (S.view==='oggi' || S.view==='settimana')) render() },60000);
+  collega();
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+})();
+</script>
+</body>
+</html>

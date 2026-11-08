@@ -1,0 +1,10 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Ogni famiglia ha i suoi dati sotto famiglie/<codice di famiglia>.
+    // Si entra solo conoscendo il codice: non è possibile elencare le famiglie.
+    match /famiglie/{famiglia}/{documento=**} {
+      allow read, write: if request.auth != null && famiglia.size() >= 12;
+    }
+  }
+}
