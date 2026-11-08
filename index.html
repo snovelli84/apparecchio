@@ -496,7 +496,8 @@ function vistaVuota(){
     <p class="muted">Incolla il menù della settimana nella sezione Dieta: APParecchio ti dirà cosa preparare a ogni pasto e cosa comprare.</p>
     ${S.stato==='offline'?'<p class="notice">Non riesco a raggiungere l\'archivio condiviso: i dati potrebbero non essere aggiornati.</p>':''}
     <button class="btn primary" data-go="dieta" style="margin-top:8px">Inserisci la dieta</button>
-    ${S.settCol && S.stato!=='loading' ? `<p class="muted" style="margin:14px 0 6px">Oppure riprendi le diete da un file di backup:</p>${S.importando?'<p class="status">Sto caricando…</p>':'<label class="btn" for="file-backup" style="display:inline-block">Carica un backup (.json)</label><input type="file" id="file-backup" accept=".json,application/json" hidden>'}`:''}</div>`;
+    ${S.codice && S.stato!=='loading' ? `<div class="notice" style="text-align:left;margin:14px 0 4px">Sei entrato con il codice <b class="num">${esc(S.codice)}</b>. Se in famiglia qualcuno usa già APParecchio, il codice deve essere <b>identico</b> al suo: altrimenti si apre una tavola nuova e vuota.<div style="margin-top:8px"><button class="btn" id="esci-si">Ho sbagliato codice, cambialo</button></div></div>`:''}
+    ${S.settCol && S.stato!=='loading' ? `<p class="muted" style="margin:14px 0 6px">Se invece sei il primo della famiglia, riprendi le diete da un file di backup:</p>${S.importando?'<p class="status">Sto caricando…</p>':'<label class="btn" for="file-backup" style="display:inline-block">Carica un backup (.json)</label><input type="file" id="file-backup" accept=".json,application/json" hidden>'}`:''}</div>`;
 }
 const ICONA_RICETTA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 13.5h12v1.5a6 6 0 0 1-12 0z"/><path d="M4 13.5h16M9 9.5c0-1.5 1-1.5 1-3M13 9.5c0-1.5 1-1.5 1-3"/></svg>';
 
@@ -932,7 +933,7 @@ function vistaCodice(){
     <p class="muted" style="margin:8px 0 14px">È la parola d'ordine che condividete in casa: tutti quelli che usano lo stesso codice vedono la stessa dieta e la stessa lista della spesa. Il telefono lo ricorda, non serve reinserirlo.</p>
     <form id="form-codice" class="stack" style="gap:10px">
       <label class="label" for="codice">Codice di famiglia</label>
-      <input id="codice" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="es. tavola-novembre-4827" style="font:inherit;font-size:17px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink)">
+      <input id="codice" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="es. tavola-novembre-4827" autocorrect="off" style="font:inherit;font-size:17px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--ink)">
       <p class="muted" style="font-size:13px;margin:0">Almeno 12 caratteri: lettere, numeri e trattini. Scegline uno difficile da indovinare.</p>
       <p class="status err" id="codice-err" aria-live="polite"></p>
       <button class="btn primary" type="submit">Entra</button>
