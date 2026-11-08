@@ -843,7 +843,7 @@ async function mostraRicetta(di,tipo,nuova){
     if(S.ricetteCol){ try{ await S.ricetteCol.doc(id).set({titolo:titoloPasto(p), testo:text, creata:new Date().toISOString()}) }catch(e){} }
   }catch(e){
     if(ctl!==ricettaCtl) return;
-    const msg = {not_granted:'Le ricette proposte non sono attive: controlla Firebase AI Logic nella console.', rate_limited:'Troppe richieste in poco tempo: riprova tra qualche minuto.', cancelled:'Ricetta interrotta.'}[e && e.code] || 'Non sono riuscito a scrivere la ricetta. Riprova tra poco.';
+    const msg = {not_granted:'Firebase non autorizza le ricette: controlla App Check (chiave reCAPTCHA in config.js) e AI Logic nella console.', rate_limited:'Troppe richieste in poco tempo: riprova tra qualche minuto.', cancelled:'Ricetta interrotta.'}[e && e.code] || 'Non sono riuscito a scrivere la ricetta. Riprova tra poco.';
     out.innerHTML = (e && e.text ? md(e.text) : '') + `<p class="notice">${msg}</p>`;
     const az=box.querySelector('.ricetta-azioni'); if(az) az.outerHTML = (e && e.code==='not_granted') ? '' : azioniRicetta(di,tipo);
   }finally{ if(ctl===ricettaCtl) ricettaCtl=null; }
@@ -974,7 +974,8 @@ function adattaGemini(model){
     }catch(e){
       if(e && e.code==='cancelled') throw e;
       console.error(e);
-      throw {code: /quota|429|exhausted/i.test(String(e&&e.message)) ? 'rate_limited' : 'error', message:String(e&&e.message||e), text};
+      const m=String(e&&e.message||e);
+      throw {code: /quota|429|exhausted/i.test(m) ? 'rate_limited' : /app.?check|401|403|permission/i.test(m) ? 'not_granted' : 'error', message:m, text};
     }
   };
 }
@@ -982,6 +983,11 @@ let FB=null;
 async function avviaFirebase(){
   if(FB) return FB;
   const app = F.initializeApp(CONFIG.firebase);
+  // App Check con reCAPTCHA v3: dimostra a Firebase che le richieste a Gemini arrivano da questa app
+  if(CONFIG.appCheckRecaptcha){
+    try{ F.initializeAppCheck(app, {provider: new F.ReCaptchaV3Provider(CONFIG.appCheckRecaptcha), isTokenAutoRefreshEnabled: true}); }
+    catch(e){ console.warn('App Check non attivo', e); }
+  }
   const auth = F.getAuth(app);
   await F.signInAnonymously(auth);
   let fs;

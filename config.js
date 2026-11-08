@@ -11,6 +11,9 @@ export default {
     messagingSenderId: "394037841689",
     appId: "1:394037841689:web:e51766974d68bff854ff88"
   },
+  // Chiave del sito reCAPTCHA v3 per App Check (serve alle ricette se App Check è "Applicata" per AI Logic).
+  // La crei su https://www.google.com/recaptcha/admin con il dominio snovelli84.github.io. Non è segreta.
+  appCheckRecaptcha: "",
   // Ricette proposte con Gemini (Firebase AI Logic). Metti false per nascondere il tasto.
   ricette: true,
   // Modello Gemini usato per le ricette. Se le ricette danno errore, prova un modello più recente
