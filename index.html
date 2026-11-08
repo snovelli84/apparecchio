@@ -844,7 +844,7 @@ async function mostraRicetta(di,tipo,nuova){
     if(S.ricetteCol){ try{ await S.ricetteCol.doc(id).set({titolo:titoloPasto(p), testo:text, creata:new Date().toISOString()}) }catch(e){} }
   }catch(e){
     if(ctl!==ricettaCtl) return;
-    const msg = {not_granted:'Firebase non autorizza le ricette: controlla App Check (chiave reCAPTCHA in config.js) e AI Logic nella console.', rate_limited:'Troppe richieste in poco tempo: riprova tra qualche minuto.', timeout:'Gemini non ha risposto in tempo. Riprova tra poco.', cancelled:'Ricetta interrotta.'}[e && e.code] || 'Non sono riuscito a scrivere la ricetta. Riprova tra poco.';
+    const msg = {not_granted:'Firebase non autorizza le ricette: controlla App Check (chiave reCAPTCHA in config.js) e AI Logic nella console.', rate_limited:'Troppe richieste in poco tempo: riprova tra qualche minuto.', timeout:'Gemini è occupato in questo momento (succede sul piano gratuito). Riprova tra qualche minuto.', cancelled:'Ricetta interrotta.'}[e && e.code] || 'Non sono riuscito a scrivere la ricetta. Riprova tra poco.';
     out.innerHTML = (e && e.text ? md(e.text) : '') + `<p class="notice">${msg}</p>`;
     const az=box.querySelector('.ricetta-azioni'); if(az) az.outerHTML = (e && e.code==='not_granted') ? '' : azioniRicetta(di,tipo);
   }finally{ clearTimeout(attesa); if(ctl===ricettaCtl) ricettaCtl=null; }
@@ -962,36 +962,41 @@ function adattaDb(fs, base){
   });
   return { collection: p => colW(F.collection(fs, base+'/'+p)), doc: p => docW(F.doc(fs, base+'/'+p)) };
 }
-function adattaGemini(veloce, base){
-  async function prova(model, prompt, opts){
+function adattaGemini(modelli){
+  // modelli: [{nome, veloce, base}] in ordine di preferenza
+  async function prova(model, prompt, opts, limiteMs){
     const signal=opts.signal; let text='';
-    let scaduto=false; const limite=setTimeout(()=>{ scaduto=true; }, 90000);
-    try{
-      const r = await Promise.race([
-        model.generateContentStream(prompt),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout: Gemini non ha risposto entro 90 secondi')), 90000)),
-        new Promise((_,rej)=>{ if(signal) signal.addEventListener('abort', ()=>rej({code:'cancelled', text:''}), {once:true}); })
-      ]);
-      for await (const ch of r.stream){
-        if(signal && signal.aborted) throw {code:'cancelled', text};
-        if(scaduto && !text) throw new Error('timeout: Gemini non ha risposto entro 90 secondi');
-        let t=''; try{ t=ch.text() }catch(_){ }
-        if(t){ text += t; opts.onText && opts.onText({text}); }
-      }
-      if(!text) throw new Error('risposta vuota da Gemini');
-      return {text, truncated:false};
-    } finally { clearTimeout(limite); }
-  }
-  return async function(prompt, opts={}){
-    try{
-      try{ return await prova(veloce, prompt, opts); }
-      catch(e){ if(base && e && !e.code && /thinking/i.test(String(e.message))) return await prova(base, prompt, opts); throw e; }
-    }catch(e){
-      if(e && e.code==='cancelled') throw e;
-      console.error('[APParecchio] Ricetta Gemini non riuscita:', e);
-      const m=String(e&&e.message||e);
-      throw {code: /quota|429|exhausted/i.test(m) ? 'rate_limited' : /app.?check|401|403|permission/i.test(m) ? 'not_granted' : /timeout/i.test(m) ? 'timeout' : 'error', message:m, text:e&&e.text};
+    const r = await Promise.race([
+      model.generateContentStream(prompt),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout: nessuna risposta')), limiteMs)),
+      new Promise((_,rej)=>{ if(signal) signal.addEventListener('abort', ()=>rej({code:'cancelled', text:''}), {once:true}); })
+    ]);
+    for await (const ch of r.stream){
+      if(signal && signal.aborted) throw {code:'cancelled', text};
+      let t=''; try{ t=ch.text() }catch(_){ }
+      if(t){ text += t; opts.onText && opts.onText({text}); }
     }
+    if(!text) throw new Error('risposta vuota da Gemini');
+    return {text, truncated:false};
+  }
+  const occupato = m => /503|unavailable|overload|timeout|abort|500|internal/i.test(m);
+  return async function(prompt, opts={}){
+    let ultimo=null;
+    const limite = Math.max(30000, Math.floor(85000/modelli.length));
+    for(const m of modelli){
+      try{
+        try{ return await prova(m.veloce, prompt, opts, limite); }
+        catch(e){ if(e && !e.code && /thinking/i.test(String(e.message))) return await prova(m.base, prompt, opts, limite); throw e; }
+      }catch(e){
+        if(e && e.code==='cancelled') throw e;
+        console.error('[APParecchio] Ricetta Gemini non riuscita con '+m.nome+':', e);
+        ultimo=e;
+        const msg=String(e&&e.message||e);
+        if(!occupato(msg) || (e && e.text)) break;   // errore non temporaneo: inutile provare altri modelli
+      }
+    }
+    const m=String(ultimo&&ultimo.message||ultimo);
+    throw {code: /quota|429|exhausted/i.test(m) ? 'rate_limited' : /app.?check|401|403|permission/i.test(m) ? 'not_granted' : occupato(m) ? 'timeout' : 'error', message:m, text:ultimo&&ultimo.text};
   };
 }
 let FB=null;
@@ -1010,10 +1015,10 @@ async function avviaFirebase(){
   catch(e){ fs = F.initializeFirestore(app, {}); }
   let sample=null;
   if(CONFIG.ricette !== false){
-    try{ const ai=F.getAI(app, {backend:new F.GoogleAIBackend()}); const nome=CONFIG.modelloGemini || 'gemini-3.8-flash';
-      sample=adattaGemini(
-        F.getGenerativeModel(ai, {model:nome, generationConfig:{thinkingConfig:{thinkingLevel:'LOW'}}}, {timeout:90000}),
-        F.getGenerativeModel(ai, {model:nome}, {timeout:90000})); }
+    try{ const ai=F.getAI(app, {backend:new F.GoogleAIBackend()}); const nomi=[].concat(CONFIG.modelliGemini || CONFIG.modelloGemini || ['gemini-3.5-flash-lite','gemini-3.8-flash']);
+      sample=adattaGemini(nomi.map(nome=>({nome,
+        veloce: F.getGenerativeModel(ai, {model:nome, generationConfig:{thinkingConfig:{thinkingLevel:'LOW'}}}, {timeout:85000}),
+        base: F.getGenerativeModel(ai, {model:nome}, {timeout:85000})}))); }
     catch(e){ console.warn('Ricette non disponibili', e); }
   }
   return FB={app, fs, sample};

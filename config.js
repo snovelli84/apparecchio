@@ -16,7 +16,7 @@ export default {
   appCheckRecaptcha: "",
   // Ricette proposte con Gemini (Firebase AI Logic). Metti false per nascondere il tasto.
   ricette: true,
-  // Modello Gemini usato per le ricette. Se le ricette danno errore, prova un modello più recente
-  // tra quelli elencati in Firebase AI Logic.
-  modelloGemini: "gemini-3.8-flash"
+  // Modelli Gemini per le ricette, in ordine di preferenza: se il primo è occupato si prova il successivo.
+  // I nomi disponibili sono nella pagina AI Logic della console Firebase.
+  modelliGemini: ["gemini-3.5-flash-lite", "gemini-3.8-flash"]
 };

@@ -1,5 +1,5 @@
 // Permette di aprire l'app anche senza rete (i dati di famiglia li gestisce Firebase).
-const VERSIONE = 'apparecchio-v3';
+const VERSIONE = 'apparecchio-v4';
 const FILE = ['./', 'index.html', 'config.js', 'firebase.js', 'manifest.webmanifest',
   'icone/icona-192.png', 'icone/icona-512.png', 'icone/apple-touch-icon.png', 'icone/favicon-32.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSIONE).then(c => c.addAll(FILE))); self.skipWaiting(); });

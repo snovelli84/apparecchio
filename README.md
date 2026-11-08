@@ -47,3 +47,9 @@ branch `main`, cartella `/ (root)` → *Save*. Dopo un minuto l'app è su `https
 I dati di ogni famiglia stanno sotto `famiglie/<codice>`: chi non conosce il codice non può leggerli né elencarli.
 Chi conosce il codice entra, quindi non pubblicarlo. Per cambiarlo: crea un backup, esci, entra con un codice nuovo e carica il backup.
 I dati in `config.js` non sono segreti (identificano solo il progetto).
+
+## Da ricordare: App Check entro il 21 gennaio 2027
+Per far funzionare le ricette, App Check di **Firebase AI Logic** è impostato su *Non applicata (solo monitoraggio)*.
+Firebase avvisa che **dal 21 gennaio 2027** lo rimetterà su *Applicata* da solo: da quel giorno le ricette daranno errore 401.
+Il codice supporta già App Check con reCAPTCHA v3 (`appCheckRecaptcha` in `config.js`). Prima di quella data va presa una decisione:
+configurare App Check, oppure spegnere le ricette (`ricette: false`). Il resto dell'app (dieta, spesa, spunte) non dipende da App Check.
