@@ -835,6 +835,7 @@ async function mostraRicetta(di,tipo,nuova){
   const ctl = ricettaCtl = new AbortController();
   box.innerHTML='<div class="label">Ricetta proposta</div><div id="ricetta-testo"><p class="muted">Sto pensando alla ricetta…</p></div><div class="row ricetta-azioni"><button class="btn" id="ricetta-stop">Interrompi</button></div>';
   const out=$('#ricetta-testo');
+  const attesa=setTimeout(()=>{ if(out.textContent.startsWith('Sto pensando')) out.innerHTML='<p class="muted">Sto pensando alla ricetta… la prima può richiedere fino a un minuto.</p>'; }, 12000);
   try{
     const {text} = await S.sample(promptRicetta(p,personePer(d,p)), {signal:ctl.signal, modelTier:'default', cache:!nuova, onText:({text})=>{ out.innerHTML=md(text) }});
     if(ctl!==ricettaCtl) return;
@@ -843,10 +844,10 @@ async function mostraRicetta(di,tipo,nuova){
     if(S.ricetteCol){ try{ await S.ricetteCol.doc(id).set({titolo:titoloPasto(p), testo:text, creata:new Date().toISOString()}) }catch(e){} }
   }catch(e){
     if(ctl!==ricettaCtl) return;
-    const msg = {not_granted:'Firebase non autorizza le ricette: controlla App Check (chiave reCAPTCHA in config.js) e AI Logic nella console.', rate_limited:'Troppe richieste in poco tempo: riprova tra qualche minuto.', cancelled:'Ricetta interrotta.'}[e && e.code] || 'Non sono riuscito a scrivere la ricetta. Riprova tra poco.';
+    const msg = {not_granted:'Firebase non autorizza le ricette: controlla App Check (chiave reCAPTCHA in config.js) e AI Logic nella console.', rate_limited:'Troppe richieste in poco tempo: riprova tra qualche minuto.', timeout:'Gemini non ha risposto in tempo. Riprova tra poco.', cancelled:'Ricetta interrotta.'}[e && e.code] || 'Non sono riuscito a scrivere la ricetta. Riprova tra poco.';
     out.innerHTML = (e && e.text ? md(e.text) : '') + `<p class="notice">${msg}</p>`;
     const az=box.querySelector('.ricetta-azioni'); if(az) az.outerHTML = (e && e.code==='not_granted') ? '' : azioniRicetta(di,tipo);
-  }finally{ if(ctl===ricettaCtl) ricettaCtl=null; }
+  }finally{ clearTimeout(attesa); if(ctl===ricettaCtl) ricettaCtl=null; }
 }
 
 /* ---------- Spunte condivise ---------- */
@@ -961,21 +962,35 @@ function adattaDb(fs, base){
   });
   return { collection: p => colW(F.collection(fs, base+'/'+p)), doc: p => docW(F.doc(fs, base+'/'+p)) };
 }
-function adattaGemini(model){
-  return async function(prompt, opts={}){
+function adattaGemini(veloce, base){
+  async function prova(model, prompt, opts){
     const signal=opts.signal; let text='';
+    let scaduto=false; const limite=setTimeout(()=>{ scaduto=true; }, 90000);
     try{
-      const r = await model.generateContentStream(prompt);
+      const r = await Promise.race([
+        model.generateContentStream(prompt),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout: Gemini non ha risposto entro 90 secondi')), 90000)),
+        new Promise((_,rej)=>{ if(signal) signal.addEventListener('abort', ()=>rej({code:'cancelled', text:''}), {once:true}); })
+      ]);
       for await (const ch of r.stream){
         if(signal && signal.aborted) throw {code:'cancelled', text};
-        text += ch.text(); opts.onText && opts.onText({text});
+        if(scaduto && !text) throw new Error('timeout: Gemini non ha risposto entro 90 secondi');
+        let t=''; try{ t=ch.text() }catch(_){ }
+        if(t){ text += t; opts.onText && opts.onText({text}); }
       }
+      if(!text) throw new Error('risposta vuota da Gemini');
       return {text, truncated:false};
+    } finally { clearTimeout(limite); }
+  }
+  return async function(prompt, opts={}){
+    try{
+      try{ return await prova(veloce, prompt, opts); }
+      catch(e){ if(base && e && !e.code && /thinking/i.test(String(e.message))) return await prova(base, prompt, opts); throw e; }
     }catch(e){
       if(e && e.code==='cancelled') throw e;
-      console.error(e);
+      console.error('[APParecchio] Ricetta Gemini non riuscita:', e);
       const m=String(e&&e.message||e);
-      throw {code: /quota|429|exhausted/i.test(m) ? 'rate_limited' : /app.?check|401|403|permission/i.test(m) ? 'not_granted' : 'error', message:m, text};
+      throw {code: /quota|429|exhausted/i.test(m) ? 'rate_limited' : /app.?check|401|403|permission/i.test(m) ? 'not_granted' : /timeout/i.test(m) ? 'timeout' : 'error', message:m, text:e&&e.text};
     }
   };
 }
@@ -995,7 +1010,10 @@ async function avviaFirebase(){
   catch(e){ fs = F.initializeFirestore(app, {}); }
   let sample=null;
   if(CONFIG.ricette !== false){
-    try{ const ai=F.getAI(app, {backend:new F.GoogleAIBackend()}); sample=adattaGemini(F.getGenerativeModel(ai, {model: CONFIG.modelloGemini || 'gemini-3.6-flash'})); }
+    try{ const ai=F.getAI(app, {backend:new F.GoogleAIBackend()}); const nome=CONFIG.modelloGemini || 'gemini-3.8-flash';
+      sample=adattaGemini(
+        F.getGenerativeModel(ai, {model:nome, generationConfig:{thinkingConfig:{thinkingLevel:'LOW'}}}, {timeout:90000}),
+        F.getGenerativeModel(ai, {model:nome}, {timeout:90000})); }
     catch(e){ console.warn('Ricette non disponibili', e); }
   }
   return FB={app, fs, sample};
