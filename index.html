@@ -60,6 +60,9 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{
 .persone{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:99px;padding:5px 10px}
 .persone svg{width:16px;height:16px}
 
+.brand-txt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+#nome-famiglia{font-size:12.5px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52vw}
+.brand{min-width:0}
 /* Tab bar */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
@@ -208,7 +211,7 @@ input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(
         <path d="M38.3 12c-2.6 1.8-3.4 5.5-3.4 10.5h3.4V36" stroke="var(--accent-ink)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         <path d="M24 19.5c3 0 4.4 2.3 4.4 4.5s-1.9 4.5-4.4 4.5" stroke="var(--warm)" stroke-width="2.2" stroke-linecap="round" fill="none"/>
       </svg>
-      <span class="word"><b>APP</b>arecchio</span>
+      <span class="brand-txt"><span class="word"><b>APP</b>arecchio</span><small id="nome-famiglia" hidden></small></span>
     </div>
     <div class="persone" id="persone-badge" title="Persone a tavola">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c.6-3.4 3-5.3 6-5.3s5.4 1.9 6 5.3"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.4.2 4 1.9 4.5 4.6"/></svg>
@@ -712,6 +715,8 @@ function vistaTavola(){
   return `<section class="card settimana-box" aria-labelledby="tavola-h">
     <h3 id="tavola-h" style="font-size:18px">Chi è a tavola</h3>
     <p class="muted" style="margin:0;font-size:13px">Vale per tutte le settimane.</p>
+    <label class="label" for="f-nome">Nome della famiglia</label>
+    <div class="row"><input id="f-nome" type="text" maxlength="40" value="${esc(S.nomeFamiglia||'')}" placeholder="es. Novelli" style="flex:1;min-width:0;font:inherit;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 10px"><button class="btn" id="f-nome-salva">Salva</button></div>
     <div class="row"><span class="label">Persone in famiglia</span><div class="stepper"><button id="meno" aria-label="Una persona in meno">−</button><span class="num" id="np">${S.persone}</span><button id="piu" aria-label="Una persona in più">+</button></div></div>
     <div class="label" style="margin-top:6px">Pasti fuori casa, ogni settimana</div>
     ${S.assenze.length ? `<div class="regole">${S.assenze.map((r,i)=>`<div class="regola"><span><b>${GIORNI[r.dow]} · ${TIPI[r.tipo].label}</b><small>${Math.max(0,S.persone-(r.fuori||1))} a tavola${r.nota?' · '+esc(r.nota):''}</small></span><button class="btn ghost" data-togli="${i}">Togli</button></div>`).join('')}</div>`
@@ -736,13 +741,14 @@ function impostaSettimane(docs){
   LS.set('settimane', S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})));
 }
 function impostaFamiglia(doc){
+  S.nomeFamiglia = (doc && typeof doc.nome==='string') ? doc.nome : '';
   S.persone = (doc && doc.persone) || 3;
   S.assenze = doc && Array.isArray(doc.assenze) ? doc.assenze : [];
-  LS.set('famiglia', {persone:S.persone, assenze:S.assenze});
+  LS.set('famiglia', {nome:S.nomeFamiglia, persone:S.persone, assenze:S.assenze});
 }
 let codaFam=Promise.resolve();
 function salvaFamiglia(){
-  const doc={persone:S.persone, assenze:S.assenze};
+  const doc={nome:S.nomeFamiglia||'', persone:S.persone, assenze:S.assenze};
   LS.set('famiglia', doc);
   if(!S.famRef) return;
   codaFam = codaFam.then(()=>S.famRef.set(doc)).then(()=>{ const st=$('#tavola-stato'); if(st){ st.textContent='Salvato per tutta la famiglia.'; st.className='status ok'; } })
@@ -776,6 +782,8 @@ async function eliminaSettimana(){
 function render(){
   document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-current', b.dataset.view===S.view?'page':'false'));
   $('#persone-n').textContent = S.persone;
+  const nf=$('#nome-famiglia'), nome=(S.codice && S.nomeFamiglia)||'';
+  nf.textContent = nome ? (/^famiglia\b/i.test(nome) ? nome : 'Famiglia '+nome) : ''; nf.hidden = !nome;
   if(!S.codice){ app.innerHTML=vistaCodice(); return; }
   app.innerHTML = `<div class="view stack">${S.erroreAvvio?`<p class="notice warn">${esc(S.erroreAvvio)}</p>`:''}${({oggi:vistaOggi, settimana:vistaSettimana, spesa:vistaSpesa, dieta:vistaDieta})[S.view]()}</div>`;
 }
@@ -906,6 +914,7 @@ app.addEventListener('click',async e=>{
   }
   if(t.id==='meno'||t.id==='piu'){ S.persone=Math.max(1,Math.min(12,S.persone+(t.id==='piu'?1:-1))); render(); return salvaFamiglia(); }
   if(t.dataset.togli!==undefined){ S.assenze=S.assenze.filter((_,i)=>i!==+t.dataset.togli); render(); return salvaFamiglia(); }
+  if(t.id==='f-nome-salva'){ S.nomeFamiglia=$('#f-nome').value.replace(/\s+/g,' ').trim().slice(0,40); render(); return salvaFamiglia(); }
   if(t.id==='r-aggiungi'){
     const r={dow:+$('#r-giorno').value, tipo:$('#r-tipo').value, fuori:+$('#r-fuori').value, nota:$('#r-nota').value.trim()};
     S.assenze=[...S.assenze.filter(x=>!(x.dow===r.dow&&x.tipo===r.tipo)), r].sort((a,b)=>((a.dow+6)%7)-((b.dow+6)%7)||ORDINE.indexOf(a.tipo)-ORDINE.indexOf(b.tipo));
@@ -923,7 +932,7 @@ app.addEventListener('input',e=>{
   if(e.target.id!=='testo-dieta' || !S.edit) return;
   S.edit.testo=e.target.value; S.edit.dirty=true; clearTimeout(bozzaTimer); bozzaTimer=setTimeout(aggiornaRiepilogo,300);
 });
-function staScrivendo(){ return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || !!document.activeElement.closest('.regola-form')))) }
+function staScrivendo(){ return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || document.activeElement.id==='f-nome' || !!document.activeElement.closest('.regola-form')))) }
 
 /* ---------- Codice di famiglia ---------- */
 function vistaCodice(){
@@ -942,7 +951,7 @@ function vistaCodice(){
 function pulisciCodice(s){ return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'') }
 function vistaCodiceFamiglia(){
   return `<section class="card settimana-box"><h3 style="font-size:18px">Codice di famiglia</h3>
-    <p class="muted" style="margin:0;font-size:13px">Dallo a chi deve usare l'app con voi: lo inserisce al primo accesso.</p>
+    <p class="muted" style="margin:0;font-size:13px">${S.nomeFamiglia?'È la chiave della tavola di <b>'+esc(S.nomeFamiglia)+'</b>. ':''}Dallo a chi deve usare l'app con voi: lo inserisce al primo accesso.</p>
     <div class="row"><code class="num" id="codice-attuale" style="font-size:16px;font-weight:700;background:var(--surface-2);padding:6px 10px;border-radius:8px;user-select:all">${esc(S.codice||'')}</code><button class="btn" id="copia-codice">Copia</button></div>
     ${S.esciConferma ? `<div class="row"><span class="status err">Uscire da questo telefono? Per rientrare servirà il codice.</span><button class="btn" id="esci-si">Esci</button><button class="btn ghost" id="esci-no">Annulla</button></div>`
       : '<div><button class="btn ghost" id="esci">Esci o cambia codice</button></div>'}
@@ -1077,7 +1086,7 @@ document.addEventListener('submit', e=>{
 app.addEventListener('click', async e=>{
   const t=e.target.closest('button'); if(!t) return;
   if(t.id==='scarica-backup'){
-    const dati={settimane:S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})), famiglia:{persone:S.persone, assenze:S.assenze}, ricette:{}};
+    const dati={settimane:S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})), famiglia:{nome:S.nomeFamiglia||'', persone:S.persone, assenze:S.assenze}, ricette:{}};
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(dati,null,1)],{type:'application/json'}));
     a.download='apparecchio-backup-'+iso(new Date())+'.json'; document.body.appendChild(a); a.click(); a.remove(); return;
   }
