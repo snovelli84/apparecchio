@@ -1295,20 +1295,7 @@ app.addEventListener('click', async e=>{
   if(t.id==='copia-codice'){ const st=$('#codice-stato'); try{ await navigator.clipboard.writeText(S.codice); st.textContent='Codice copiato.'; st.className='status ok'; }catch(_){ st.textContent='Tieni premuto sul codice per copiarlo.'; st.className='status'; } }
 });
 
-(function init(){
-  const h=location.hash.slice(1); S.view=VIEWS.includes(h)?h:'oggi';
-  if(!CONFIG.firebase || !CONFIG.firebase.apiKey || /INSERISCI/.test(CONFIG.firebase.apiKey)){
-    app.innerHTML='<div class="card empty"><h2>Manca la configurazione</h2><p class="muted">Compila il file config.js con i dati del tuo progetto Firebase (vedi README).</p></div>';
-    document.querySelector('.tabs').hidden=true; return;
-  }
-  S.codice = LS.get('codice', null);
-  if(!S.codice){ document.querySelector('.tabs').hidden=true; app.innerHTML=vistaCodice(); return; }
-  const ls=LS.get('settimane',null); if(Array.isArray(ls) && ls.length) impostaSettimane(ls);
-  const fam=LS.get('famiglia',null); if(fam) impostaFamiglia(fam);
-  S.pesi=LS.get('pesi',[]) || []; S.pesoSel=LS.get('pesoSel',null);
-  render();
-  setInterval(()=>{ if($('#sheet').hidden && (S.view==='oggi' || S.view==='settimana')) render() },60000);
-  collega();
+function registraSw(){
   if('serviceWorker' in navigator){
     const avevaSw = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(reg=>{
@@ -1323,6 +1310,22 @@ app.addEventListener('click', async e=>{
       const vai=()=>{ if(staScrivendo()) return setTimeout(vai, 5000); location.reload(); }; vai();
     });
   }
+}
+(function init(){
+  registraSw();
+  const h=location.hash.slice(1); S.view=VIEWS.includes(h)?h:'oggi';
+  if(!CONFIG.firebase || !CONFIG.firebase.apiKey || /INSERISCI/.test(CONFIG.firebase.apiKey)){
+    app.innerHTML='<div class="card empty"><h2>Manca la configurazione</h2><p class="muted">Compila il file config.js con i dati del tuo progetto Firebase (vedi README).</p></div>';
+    document.querySelector('.tabs').hidden=true; return;
+  }
+  S.codice = LS.get('codice', null);
+  if(!S.codice){ document.querySelector('.tabs').hidden=true; app.innerHTML=vistaCodice(); return; }
+  const ls=LS.get('settimane',null); if(Array.isArray(ls) && ls.length) impostaSettimane(ls);
+  const fam=LS.get('famiglia',null); if(fam) impostaFamiglia(fam);
+  S.pesi=LS.get('pesi',[]) || []; S.pesoSel=LS.get('pesoSel',null);
+  render();
+  setInterval(()=>{ if($('#sheet').hidden && (S.view==='oggi' || S.view==='settimana')) render() },60000);
+  collega();
 })();
 })();
 </script>
