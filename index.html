@@ -175,6 +175,11 @@ textarea{width:100%;box-sizing:border-box;min-height:46vh;border:1px solid var(-
 .ricetta h4{font-family:var(--font-display);font-size:16px;margin:14px 0 4px}
 .ricetta p{margin:4px 0}.ricetta ul,.ricetta ol{margin:4px 0;padding-left:22px;display:flex;flex-direction:column;gap:4px}
 .ricetta-azioni{margin-top:12px}
+.ricetta-scelta{display:flex;flex-direction:column;gap:8px}
+.ricetta-scelta .btn{display:inline-flex;align-items:center;gap:6px}
+.ricetta-scelta .btn[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.scelta-calda svg{color:var(--warm)} .scelta-fredda svg{color:var(--accent)}
+.ricetta-scelta .btn[aria-pressed="true"] svg{color:inherit}
 .settimana-box{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
 input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:8px 12px}
 .regole{display:flex;flex-direction:column}
@@ -811,14 +816,25 @@ function apriPasto(di,tipo,conRicetta){
     <div class="row" style="justify-content:space-between;margin:6px 0 10px"><h2 id="sheet-title">${esc(titoloPasto(p))}</h2>${p.kcal?`<span class="kcal num">≈ ${p.kcal} kcal a persona</span>`:''}</div>
     ${regola(d,p)||p.speciale?`<p class="muted" style="margin:0 0 6px;font-size:13px">A tavola: ${aTavola(d,p)}${p.speciale?' · pasto valido solo per questo giorno':''}</p>`:''}
     ${tabellaVoci(p,personePer(d,p))}${noteHtml(p)}
-    ${libero(p)?'':`<div class="ricetta" id="ricetta">${S.sample||S.ricetteCol?`<button class="btn" data-ricetta="${di}:${tipo}">${ICONA_RICETTA} Ricetta proposta</button>`:''}</div>`}`;
+    ${libero(p)||!(S.sample||S.ricetteCol)?'':`<div class="ricetta" id="ricetta">
+      <div class="ricetta-scelta"><span class="label">Ricetta proposta</span>
+        <div class="row">${['calda','fredda'].map(v=>`<button class="btn scelta-${v}" data-ricetta="${di}:${tipo}:${v}" aria-pressed="false">${v==='calda'?ICONA_CALDA:ICONA_FREDDA} ${v==='calda'?'Calda':'Fredda'}</button>`).join('')}</div>
+        <p class="muted" id="ricetta-aiuto" style="margin:0;font-size:13px">Scegli se la vuoi cotta e servita calda, oppure fredda: insalata, piatto da preparare prima o da portare via.</p></div>
+      <div id="ricetta-corpo"></div></div>`}`;
   $('#sheet').hidden=false; $('#sheet-close').focus();
-  if(conRicetta && !libero(p)) mostraRicetta(di,tipo,false);
+  if(conRicetta && !libero(p)){ const r=$('#ricetta'); if(r) setTimeout(()=>r.scrollIntoView({block:'nearest', behavior:'smooth'}), 50); }
 }
+const ICONA_CALDA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3c1 3 4.5 4.5 4.5 9a4.5 4.5 0 0 1-9 0c0-2 1-3.2 2-4 .3 1.6 1 2.4 2 2.8C11 8.6 11 6 12 3z"/></svg>';
+const ICONA_FREDDA='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M9.5 4.5 12 6l2.5-1.5M9.5 19.5 12 18l2.5 1.5"/></svg>';
 function chiudi(){ $('#sheet').hidden=true; if(ricettaCtl){ ricettaCtl.abort(); ricettaCtl=null } }
 function idRicetta(d,p){ return slug(GIORNI_BREVI[d.getDay()]+'-'+p.tipo+'-'+titoloPasto(p)+'-'+personePer(d,p)) }
-function promptRicetta(p,N){
+const VARIANTI = {
+  calda: 'Versione CALDA: un piatto cotto al momento (padella, forno, vapore, pentola o griglia) e servito caldo.',
+  fredda: 'Versione FREDDA: un piatto da servire freddo o a temperatura ambiente (insalata, piatto unico freddo, bowl), che si può preparare in anticipo e portare via in un contenitore. Se un ingrediente va cotto (cereali, legumi, carne, pesce, verdure), indica di cuocerlo prima e lasciarlo raffreddare; spiega come conservarlo in frigo.'
+};
+function promptRicetta(p,N,variante){
   return `Sei un cuoco di casa italiano attento alla dieta. Proponi una ricetta semplice per "${titoloPasto(p)}" (${p.label.toLowerCase()}) per ${N} persone.
+${VARIANTI[variante]||VARIANTI.calda}
 
 Ingredienti previsti dalla dieta, quantità TOTALI per ${N} persone:
 ${p.voci.map(v=>`- ${v.nome}: ${v.qta==null?'quanto basta':fmtQ(v.qta*N,v.unita)}`).join('\n')}
@@ -839,36 +855,44 @@ una riga con preparazione e cottura
 ## Consiglio
 una riga`;
 }
-function azioniRicetta(di,tipo){
-  return `<div class="row ricetta-azioni">${S.sample?`<button class="btn" data-rigenera="${di}:${tipo}">Proponine un'altra</button>`:''}</div>`;
+function azioniRicetta(di,tipo,variante){
+  const altra = variante==='fredda' ? 'calda' : 'fredda';
+  return `<div class="row ricetta-azioni">${S.sample?`<button class="btn" data-rigenera="${di}:${tipo}:${variante}">Proponine un'altra ${variante}</button>`:''}<button class="btn ghost" data-ricetta="${di}:${tipo}:${altra}">Versione ${altra}</button></div>`;
 }
-async function mostraRicetta(di,tipo,nuova){
-  const box=$('#ricetta'); if(!box) return;
+async function mostraRicetta(di,tipo,nuova,variante){
+  variante = variante==='fredda' ? 'fredda' : 'calda';
+  const ric=$('#ricetta'), box=$('#ricetta-corpo'); if(!ric || !box) return;
   const d=daIso(di), p=pastoData(d,tipo); if(!p) return;
-  const id=idRicetta(d,p);
+  ricettaAperta={di,tipo,variante};
+  ric.querySelectorAll('.ricetta-scelta [data-ricetta]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.ricetta.endsWith(':'+variante))));
+  const aiuto=$('#ricetta-aiuto'); if(aiuto) aiuto.hidden=true;
+  const base=idRicetta(d,p), id=base+'-'+variante;
+  const titoloR=`<div class="label" style="margin-top:12px">Ricetta ${variante}</div>`;
   if(!nuova && S.ricetteCol){
     box.innerHTML='<p class="muted">Cerco la ricetta salvata…</p>';
-    try{ const s=await S.ricetteCol.doc(id).get();
-      if(s.exists && s.data().testo){ if(ricettaAperta.di!==di) return; box.innerHTML='<div class="label">Ricetta proposta</div>'+md(s.data().testo)+azioniRicetta(di,tipo); return; }
+    try{
+      let s=await S.ricetteCol.doc(id).get();
+      if(!(s.exists && s.data().testo) && variante==='calda') s=await S.ricetteCol.doc(base).get();   // ricette salvate prima della scelta calda/fredda
+      if(s.exists && s.data().testo){ if(ricettaAperta.di!==di || ricettaAperta.variante!==variante) return; box.innerHTML=titoloR+md(s.data().testo)+azioniRicetta(di,tipo,variante); return; }
     }catch(e){}
   }
   if(!S.sample){ box.innerHTML='<p class="notice">Le ricette proposte non sono disponibili in questa visualizzazione.</p>'; return; }
   ricettaCtl && ricettaCtl.abort();
   const ctl = ricettaCtl = new AbortController();
-  box.innerHTML='<div class="label">Ricetta proposta</div><div id="ricetta-testo"><p class="muted">Sto pensando alla ricetta…</p></div><div class="row ricetta-azioni"><button class="btn" id="ricetta-stop">Interrompi</button></div>';
+  box.innerHTML=titoloR+'<div id="ricetta-testo"><p class="muted">Sto pensando alla ricetta…</p></div><div class="row ricetta-azioni"><button class="btn" id="ricetta-stop">Interrompi</button></div>';
   const out=$('#ricetta-testo');
   const attesa=setTimeout(()=>{ if(out.textContent.startsWith('Sto pensando')) out.innerHTML='<p class="muted">Sto pensando alla ricetta… la prima può richiedere fino a un minuto.</p>'; }, 12000);
   try{
-    const {text} = await S.sample(promptRicetta(p,personePer(d,p)), {signal:ctl.signal, modelTier:'default', cache:!nuova, onText:({text})=>{ out.innerHTML=md(text) }});
+    const {text} = await S.sample(promptRicetta(p,personePer(d,p),variante), {signal:ctl.signal, modelTier:'default', cache:!nuova, onText:({text})=>{ out.innerHTML=md(text) }});
     if(ctl!==ricettaCtl) return;
     out.innerHTML=md(text);
-    box.querySelector('.ricetta-azioni').outerHTML=azioniRicetta(di,tipo);
-    if(S.ricetteCol){ try{ await S.ricetteCol.doc(id).set({titolo:titoloPasto(p), testo:text, creata:new Date().toISOString()}) }catch(e){} }
+    box.querySelector('.ricetta-azioni').outerHTML=azioniRicetta(di,tipo,variante);
+    if(S.ricetteCol){ try{ await S.ricetteCol.doc(id).set({titolo:titoloPasto(p), variante, testo:text, creata:new Date().toISOString()}) }catch(e){} }
   }catch(e){
     if(ctl!==ricettaCtl) return;
     const msg = {not_granted:'Firebase non autorizza le ricette: controlla App Check (chiave reCAPTCHA in config.js) e AI Logic nella console.', rate_limited:'Troppe richieste in poco tempo: riprova tra qualche minuto.', timeout:'Gemini è occupato in questo momento (succede sul piano gratuito). Riprova tra qualche minuto.', cancelled:'Ricetta interrotta.'}[e && e.code] || 'Non sono riuscito a scrivere la ricetta. Riprova tra poco.';
     out.innerHTML = (e && e.text ? md(e.text) : '') + `<p class="notice">${msg}</p>`;
-    const az=box.querySelector('.ricetta-azioni'); if(az) az.outerHTML = (e && e.code==='not_granted') ? '' : azioniRicetta(di,tipo);
+    const az=box.querySelector('.ricetta-azioni'); if(az) az.outerHTML = (e && e.code==='not_granted') ? '' : azioniRicetta(di,tipo,variante);
   }finally{ clearTimeout(attesa); if(ctl===ricettaCtl) ricettaCtl=null; }
 }
 
@@ -895,8 +919,8 @@ $('#sheet-close').addEventListener('click',chiudi);
 $('#sheet').addEventListener('click',e=>{
   if(e.target.id==='sheet') return chiudi();
   const b=e.target.closest('button'); if(!b) return;
-  if(b.dataset.ricetta){ const [di,t]=b.dataset.ricetta.split(':'); return mostraRicetta(di,t,false); }
-  if(b.dataset.rigenera){ const [di,t]=b.dataset.rigenera.split(':'); return mostraRicetta(di,t,true); }
+  if(b.dataset.ricetta){ const [di,t,v]=b.dataset.ricetta.split(':'); return mostraRicetta(di,t,false,v); }
+  if(b.dataset.rigenera){ const [di,t,v]=b.dataset.rigenera.split(':'); return mostraRicetta(di,t,true,v); }
   if(b.id==='ricetta-stop' && ricettaCtl) ricettaCtl.abort();
 });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('#sheet').hidden) chiudi() });
