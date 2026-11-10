@@ -1129,6 +1129,7 @@ app.addEventListener('keydown', e=>{
   if(e.target.id==='peso-nome'){ e.preventDefault(); $('#peso-crea').click(); }
 });
 
+const VERSIONE_APP='10 nov 2026 · ricette calde e fredde';
 /* ---------- Codice di famiglia ---------- */
 function vistaCodice(){
   return `<section class="card ask" style="margin-top:12px">
@@ -1151,7 +1152,8 @@ function vistaCodiceFamiglia(){
     ${S.esciConferma ? `<div class="row"><span class="status err">Uscire da questo telefono? Per rientrare servirà il codice.</span><button class="btn" id="esci-si">Esci</button><button class="btn ghost" id="esci-no">Annulla</button></div>`
       : '<div><button class="btn ghost" id="esci">Esci o cambia codice</button></div>'}
     <div class="row"><button class="btn" id="scarica-backup">Scarica un backup</button><span class="muted" style="font-size:13px">diete e impostazioni in un file</span></div>
-    <p class="status" id="codice-stato" aria-live="polite"></p></section>`;
+    <p class="status" id="codice-stato" aria-live="polite"></p>
+    <p class="muted num" style="margin:0;font-size:12px">Versione ${VERSIONE_APP}</p></section>`;
 }
 
 /* ---------- Avvio (Firebase) ---------- */
@@ -1307,7 +1309,20 @@ app.addEventListener('click', async e=>{
   render();
   setInterval(()=>{ if($('#sheet').hidden && (S.view==='oggi' || S.view==='settimana')) render() },60000);
   collega();
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+  if('serviceWorker' in navigator){
+    const avevaSw = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(reg=>{
+      const controlla=()=>reg.update().catch(()=>{});
+      document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='visible') controlla(); });
+      setInterval(controlla, 30*60000);
+    }).catch(()=>{});
+    // quando arriva una versione nuova, ricarica una volta (solo se non si sta scrivendo)
+    let ricaricata=false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(!avevaSw || ricaricata) return; ricaricata=true;
+      const vai=()=>{ if(staScrivendo()) return setTimeout(vai, 5000); location.reload(); }; vai();
+    });
+  }
 })();
 })();
 </script>
