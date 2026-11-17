@@ -15,7 +15,11 @@ const PROVA = ['1', 'true'].includes(String(process.env.PROVA || '').toLowerCase
 const DRY = process.env.DRY_RUN === '1';
 
 const grezzo = process.env.FIREBASE_SERVICE_ACCOUNT;
-if (!grezzo) { console.error('Manca il secret FIREBASE_SERVICE_ACCOUNT.'); process.exit(1); }
+if (!grezzo) {
+  // Notifiche non ancora configurate: avviso visibile in GitHub Actions, ma nessun errore (niente email di fallimento).
+  console.log('::warning::Manca il secret FIREBASE_SERVICE_ACCOUNT: notifiche non ancora configurate (vedi README).');
+  process.exit(0);
+}
 let account;
 try { account = JSON.parse(grezzo); } catch { console.error('FIREBASE_SERVICE_ACCOUNT non contiene un JSON valido.'); process.exit(1); }
 
