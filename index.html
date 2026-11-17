@@ -1167,7 +1167,7 @@ app.addEventListener('keydown', e=>{
   if(e.target.id==='peso-nome'){ e.preventDefault(); $('#peso-crea').click(); }
 });
 
-const VERSIONE_APP='17 nov 2026 · lista acquisti del kit e suggerimenti';
+const VERSIONE_APP='17 nov 2026 · filtri nella lista acquisti';
 /* ---------- Spesa: voci in più (libere o dal kit di emergenza) ---------- */
 function vistaExtra(){
   const voci=[...S.extra].sort((a,b)=>(a.creato_il||'').localeCompare(b.creato_il||''));
@@ -1261,7 +1261,12 @@ function vistaEmergenza(){
   </div>
   <div class="seg em-viste" role="group" aria-label="Vista" style="margin:0"><button data-em-vista="elenco" aria-pressed="${!['acquisti','controllo'].includes(S.emVista)}">Elenco</button><button data-em-vista="acquisti" aria-pressed="${S.emVista==='acquisti'}">Acquisti</button><button data-em-vista="controllo" aria-pressed="${S.emVista==='controllo'}">Controllo semestrale</button></div>`;
   if(S.emVista==='controllo') return html + vistaControllo(art, stati) + vistaNotifiche();
-  if(S.emVista==='acquisti') return html + vistaAcquisti(art) + vistaNotifiche();
+  if(S.emVista==='acquisti'){
+    const daComprare=art.filter(daAcquistare);
+    const catAcq=CATEGORIE_EM.filter(([k])=>k===fc || daComprare.some(a=>a.categoria===k));
+    html += `<div class="chips" role="group" aria-label="Filtra per categoria"><button class="chip" data-em-cat="" aria-pressed="${!fc}">Tutte</button>${catAcq.map(([k,l])=>`<button class="chip" data-em-cat="${k}" aria-pressed="${fc===k}">${l}</button>`).join('')}</div>`;
+    return html + vistaAcquisti(art) + vistaNotifiche();
+  }
   const catPresenti=CATEGORIE_EM.filter(([k])=>art.some(a=>a.categoria===k));
   html += `<div class="chips" role="group" aria-label="Filtra per categoria"><button class="chip" data-em-cat="" aria-pressed="${!fc}">Tutte</button>${catPresenti.map(([k,l])=>`<button class="chip" data-em-cat="${k}" aria-pressed="${fc===k}">${l}</button>`).join('')}</div>`;
   if(fs||fc) html += `<p class="muted" style="margin:0;font-size:13px">Filtro attivo: ${[fs&&({scaduto:'scaduti',in_scadenza:'entro 30 giorni',da_comprare:'da comprare'})[fs], fc&&nomeCat(fc).toLowerCase()].filter(Boolean).join(' · ')} <button class="btn ghost" id="em-togli-filtri">Togli i filtri</button></p>`;
@@ -1517,13 +1522,17 @@ $('#sheet').addEventListener('submit', async e=>{
 
 /* Lista acquisti del kit: tutto ciò che va comprato o sostituito, sommato per prodotto, senza contenitori */
 function chiaveProdotto(nome){ return norm(nome).replace(/\s+/g,' ').trim() }
+function daAcquistare(a){
+  const st=statoEm(a);
+  return st.stato==='da_comprare' || ((st.stato==='scaduto' || st.stato==='in_scadenza') && st.tipo==='scadenza');
+}
 function righeAcquisti(art){
+  const fc=S.emFiltroCat||'';
   const gruppi=new Map();
   for(const a of art){
+    if(fc && a.categoria!==fc) continue;
+    if(!daAcquistare(a)) continue;
     const st=statoEm(a);
-    const daComprare = st.stato==='da_comprare';
-    const daSostituire = (st.stato==='scaduto' || st.stato==='in_scadenza') && st.tipo==='scadenza';
-    if(!daComprare && !daSostituire) continue;
     const k=chiaveProdotto(a.nome);
     const g=gruppi.get(k) || {chiave:k, nome:a.nome, quantita:{}, senzaQta:0, contenitori:[], ids:[], peggiore:null, giorni:null};
     if(a.quantita!=null && a.quantita!=='' && +a.quantita>0){ const u=a.unita||'pz'; g.quantita[u]=(g.quantita[u]||0)+(+a.quantita); } else g.senzaQta++;
@@ -1547,14 +1556,14 @@ function vistaAcquisti(art){
   const righe=righeAcquisti(art);
   let html=`<section class="card settimana-box"><h3 style="font-size:18px">Lista acquisti del kit</h3>
     <p class="muted" style="margin:0;font-size:13px">Tutto quello che va comprato o sostituito (scaduto o in scadenza entro 30 giorni), sommato per prodotto, senza dividere tra zaini e scorta. I controlli periodici non ci sono: vanno controllati, non comprati.</p></section>`;
-  if(!righe.length) return html+'<p class="notice">Niente da comprare: il kit è completo e nessun articolo scade nei prossimi 30 giorni.</p>';
+  if(!righe.length) return html+(S.emFiltroCat ? `<p class="notice">Niente da comprare nella categoria ${esc(nomeCat(S.emFiltroCat).toLowerCase())}.</p>` : '<p class="notice">Niente da comprare: il kit è completo e nessun articolo scade nei prossimi 30 giorni.</p>');
   html+=`<section class="card cat">${righe.map(g=>{
     const dove=[...new Set(g.contenitori)];
     const conteggio = g.contenitori.length>1 ? ` (${g.contenitori.length} articoli)` : '';
     return `<div class="em-riga acq-riga"><div class="em-info"><b>${esc(g.nome)}</b><small>${esc(dove.join(' · ')+conteggio)}</small></div>
       <div class="acq-dx"><span class="num acq-qta">${esc(qtaGruppo(g))}</span>${motivoGruppo(g)}</div>
       <div class="em-azioni">${giaInSpesa(g)?'<span class="muted" style="font-size:12.5px;margin-left:6px">già nella spesa</span>':`<button class="btn ghost" data-acq-spesa="${esc(g.chiave)}">+ Spesa</button>`}</div></div>`; }).join('')}</section>
-  <div class="row" style="justify-content:space-between"><button class="btn primary" id="acq-tutto">Aggiungi tutto alla Spesa</button><button class="btn" id="acq-copia">Copia la lista</button></div>
+  <div class="row" style="justify-content:space-between"><button class="btn primary" id="acq-tutto">${S.emFiltroCat?'Aggiungi questi alla Spesa':'Aggiungi tutto alla Spesa'}</button><button class="btn" id="acq-copia">Copia la lista</button></div>
   <p class="status" id="acq-stato" aria-live="polite"></p>`;
   return html;
 }
@@ -1567,10 +1576,10 @@ app.addEventListener('click', async e=>{
   }
   if(t.id==='acq-tutto'){
     let n=0; for(const g of righeAcquisti(S.emArticoli)) if(await mandaInSpesa(g)) n++;
-    S.emMsg={t: n ? `Aggiunti ${n} prodotti alla Spesa, in "Da comprare in più".` : 'Era già tutto nella Spesa.', cls:'ok'}; return render();
+    S.emMsg={t: n ? `${n===1?'Aggiunto 1 prodotto':'Aggiunti '+n+' prodotti'} alla Spesa, in "Da comprare in più".` : 'Era già tutto nella Spesa.', cls:'ok'}; return render();
   }
   if(t.id==='acq-copia'){
-    const testo='Kit di emergenza · da comprare\n\n'+righeAcquisti(S.emArticoli).map(g=>`- ${g.nome}${qtaGruppo(g)?': '+qtaGruppo(g):''}`).join('\n');
+    const testo='Kit di emergenza · da comprare'+(S.emFiltroCat?' · '+nomeCat(S.emFiltroCat):'')+'\n\n'+righeAcquisti(S.emArticoli).map(g=>`- ${g.nome}${qtaGruppo(g)?': '+qtaGruppo(g):''}`).join('\n');
     const st=$('#acq-stato');
     try{ await navigator.clipboard.writeText(testo); st.textContent='Lista copiata: incollala dove vuoi.'; st.className='status ok'; }
     catch(err){ st.className='status'; st.innerHTML='Copia non disponibile qui: seleziona il testo qui sotto.<textarea style="min-height:140px;margin-top:8px" readonly>'+esc(testo)+'</textarea>'; st.querySelector('textarea').select(); }
