@@ -206,6 +206,9 @@ input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(
 .extra-item .qt .btn{padding:2px 8px;font-size:16px;line-height:1}
 .extra-item label.nm{cursor:pointer}
 .extra-form{margin:10px 0 4px}
+.notif-campi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.notif-campi label{display:flex;flex-direction:column;gap:4px;min-width:0}
+@media (max-width:480px){.notif-campi{grid-template-columns:1fr 1fr}.notif-campi label:first-child{grid-column:1/-1}}
 .em-stato{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .em-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;min-width:0}
 .em-tile b{font-family:var(--font-display);font-size:24px;line-height:1}
@@ -999,7 +1002,7 @@ app.addEventListener('input',e=>{
   if(e.target.id!=='testo-dieta' || !S.edit) return;
   S.edit.testo=e.target.value; S.edit.dirty=true; clearTimeout(bozzaTimer); bozzaTimer=setTimeout(aggiornaRiepilogo,300);
 });
-function staScrivendo(){ if(S.view==='spesa') return !!(document.activeElement && document.activeElement.id==='extra-nome'); if(S.view==='emergenza') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.em-azioni')); if(S.view==='peso') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.peso-form')); return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || document.activeElement.id==='f-nome' || !!document.activeElement.closest('.regola-form')))) }
+function staScrivendo(){ if(S.view==='spesa') return !!(document.activeElement && document.activeElement.id==='extra-nome'); if(S.view==='emergenza') return !!(document.activeElement && document.activeElement.closest && (document.activeElement.closest('.em-azioni') || document.activeElement.closest('.notifiche-box'))); if(S.view==='peso') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.peso-form')); return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || document.activeElement.id==='f-nome' || !!document.activeElement.closest('.regola-form')))) }
 
 /* ---------- Peso (facoltativo) ---------- */
 function personaSel(){ return S.pesi.find(p=>p.id===S.pesoSel) || S.pesi[0] || null }
@@ -1159,7 +1162,7 @@ app.addEventListener('keydown', e=>{
   if(e.target.id==='peso-nome'){ e.preventDefault(); $('#peso-crea').click(); }
 });
 
-const VERSIONE_APP='17 nov 2026 · kit di emergenza';
+const VERSIONE_APP='17 nov 2026 · kit di emergenza e notifiche';
 /* ---------- Spesa: voci in più (libere o dal kit di emergenza) ---------- */
 function vistaExtra(){
   const voci=[...S.extra].sort((a,b)=>(a.creato_il||'').localeCompare(b.creato_il||''));
@@ -1504,8 +1507,125 @@ $('#sheet').addEventListener('submit', async e=>{
   await salvaArticolo(a);
 });
 
-/* Notifiche: arrivano nel commit successivo */
-function vistaNotifiche(){ return '' }
+/* ---------- Notifiche push del kit di emergenza ---------- */
+const SOGLIE_DEFAULT=[30,7];
+const eIos = () => /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const eStandalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
+function nomeDispositivo(){
+  const u=navigator.userAgent;
+  const sis = /iPhone/.test(u)?'iPhone' : /iPad/.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)?'iPad' : /Android/.test(u)?'Android' : /Windows/.test(u)?'Windows' : /Mac/.test(u)?'Mac' : 'Dispositivo';
+  const br = /EdgA?\//.test(u)?'Edge' : /SamsungBrowser/.test(u)?'Samsung Internet' : /Firefox|FxiOS/.test(u)?'Firefox' : /CriOS|Chrome/.test(u)?'Chrome' : /Safari/.test(u)?'Safari' : '';
+  return [sis, br].filter(Boolean).join(' · ') + (eStandalone()?' (app)':'');
+}
+function idDispositivo(){ let id=LS.get('dispositivoId',null); if(!id){ id='d-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,8); LS.set('dispositivoId', id); } return id }
+function soglieQui(){ const s=LS.get('soglie',null); return Array.isArray(s)&&s.length ? s : SOGLIE_DEFAULT }
+let messaging=null;
+async function prendiMessaging(){ if(!messaging){ const fb=await avviaFirebase(); messaging=F.getMessaging(fb.app); } return messaging }
+
+async function statoNotifiche(){
+  if(!CONFIG.vapidKey) return 'senza_chiave';
+  if(eIos() && !eStandalone()) return 'ios_home';
+  if(!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) return 'non_supportate';
+  try{ if(!(await F.messagingSupportato())) return 'non_supportate'; }catch(_){ return 'non_supportate'; }
+  if(Notification.permission==='denied') return 'bloccate';
+  if(Notification.permission==='granted' && LS.get('notifiche',false)) return 'attive';
+  return 'spente';
+}
+async function aggiornaStatoNotifiche(){ const st=await statoNotifiche(); if(st!==S.notif){ S.notif=st; if(S.view==='emergenza' && !staScrivendo()) render(); } }
+
+function vistaNotifiche(){
+  if(S.notif===undefined){ S.notif='controllo'; aggiornaStatoNotifiche(); }
+  const st=S.notif, s=soglieQui();
+  const testi={
+    controllo:['Controllo…',''],
+    senza_chiave:['Non ancora configurate','Manca la chiave pubblica Web Push (VAPID) in config.js: la trovi nella guida del README.'],
+    ios_home:['Prima aggiungi l\'app alla Home','Su iPhone le notifiche arrivano solo all\'app installata (iOS 16.4 o successivo): in Safari tocca <b>Condividi</b> ⬆︎ → <b>Aggiungi alla schermata Home</b>, poi apri APParecchio dall\'icona e torna qui.'],
+    non_supportate:['Non supportate qui','Questo browser non riceve notifiche push. Su Android usa Chrome; su iPhone serve iOS 16.4 o successivo con l\'app aggiunta alla Home.'],
+    bloccate:['Bloccate','Le notifiche sono state rifiutate per questa app. '+(eIos()?'Sblocca da <b>Impostazioni → Notifiche → APParecchio</b>.':'Sblocca toccando il lucchetto accanto all\'indirizzo → <b>Autorizzazioni</b> (o Impostazioni sito) → <b>Notifiche: Consenti</b>, poi ricarica.')],
+    spente:['Disattivate','Ricevi un riepilogo quando qualcosa del kit scade o va controllato. Arriva una volta al giorno, verso le 18 (le 19 con l\'ora legale), solo se c\'è una novità.'],
+    attive:['Attive su questo telefono','Riceverai un riepilogo quando un articolo entra in una nuova soglia. Le notifiche partono una volta al giorno, verso le 18 (19 con l\'ora legale).']
+  };
+  const [titolo, spiega]=testi[st]||testi.controllo;
+  return `<section class="card settimana-box notifiche-box" aria-labelledby="notif-h">
+    <div class="row" style="justify-content:space-between"><h3 id="notif-h" style="font-size:18px">Notifiche</h3><span class="em-badge ${st==='attive'?'da_comprare':st==='bloccate'?'scaduto':''}">${titolo}</span></div>
+    ${spiega?`<p class="muted" style="margin:0;font-size:13.5px">${spiega}</p>`:''}
+    ${st==='spente'||st==='attive' ? `
+      <div class="notif-campi">
+        <label><span class="label">Nome su questo telefono</span><input id="notif-utente" class="campo" maxlength="30" value="${esc(LS.get('utente','') || (personaSel()&&personaSel().nome) || '')}" placeholder="es. Simone"></label>
+        <label><span class="label">Primo avviso</span><select id="notif-s1" class="campo">${[60,45,30,21,14].map(g=>`<option value="${g}" ${s[0]===g?'selected':''}>${g} giorni prima</option>`).join('')}</select></label>
+        <label><span class="label">Secondo avviso</span><select id="notif-s2" class="campo">${[0,14,10,7,5,3,1].map(g=>`<option value="${g}" ${(s[1]||0)===g?'selected':''}>${g?g+' giorni prima':'nessuno'}</option>`).join('')}</select></label>
+      </div>
+      <p class="muted" style="margin:0;font-size:12.5px">Gli articoli scaduti vengono sempre segnalati.</p>
+      <div class="row">${st==='spente'?'<button class="btn primary" id="notif-attiva">Attiva notifiche</button>':'<button class="btn" id="notif-prova">Invia notifica di prova</button><button class="btn ghost" id="notif-spegni">Disattiva su questo telefono</button>'}</div>` : ''}
+    <p class="status ${S.notifMsg?S.notifMsg.cls:''}" id="notif-stato" aria-live="polite">${S.notifMsg?esc(S.notifMsg.t):''}</p>
+  </section>`;
+}
+async function salvaDispositivo(token){
+  if(!S.dispCol) return;
+  const id=idDispositivo(), ora=new Date().toISOString();
+  const dati={token, utente: LS.get('utente','') || (personaSel()&&personaSel().nome) || '', dispositivo: nomeDispositivo(), ultimo_uso: ora, preferenze:{soglie: soglieQui()}};
+  if(!LS.get('dispositivoCreato',null)){ dati.creato_il=ora; }
+  await S.dispCol.doc(id).merge(dati);
+  LS.set('dispositivoCreato', ora);
+}
+async function attivaNotifiche(){
+  S.notifMsg={t:'Attivo le notifiche…', cls:''}; render();
+  try{
+    const perm = await Notification.requestPermission();
+    if(perm!=='granted'){ S.notif = perm==='denied' ? 'bloccate' : 'spente'; S.notifMsg = perm==='denied' ? null : {t:'Permesso non concesso: puoi riprovare quando vuoi.', cls:''}; return render(); }
+    const reg = await navigator.serviceWorker.ready;
+    const token = await F.getToken(await prendiMessaging(), {vapidKey: CONFIG.vapidKey, serviceWorkerRegistration: reg});
+    if(!token) throw new Error('nessun token');
+    await salvaDispositivo(token);
+    LS.set('notifiche', true); S.notif='attive';
+    S.notifMsg={t:'Notifiche attive. Prova con "Invia notifica di prova".', cls:'ok'};
+  }catch(e){
+    console.error('[APParecchio] Attivazione notifiche non riuscita:', e);
+    const m=String(e && (e.code||e.message) || e);
+    S.notifMsg={t: /permission-blocked|denied/i.test(m) ? 'Il telefono ha bloccato le notifiche per questa app.' : /unsubscribe|registration|installations|api-key|403|PERMISSION_DENIED/i.test(m) ? 'Firebase ha rifiutato la registrazione del telefono: controlla la chiave VAPID e le API di Cloud Messaging (vedi README).' : 'Non sono riuscito ad attivare le notifiche. Riprova tra poco.', cls:'err'};
+  }
+  render();
+}
+async function spegniNotifiche(){
+  try{ await F.deleteToken(await prendiMessaging()); }catch(e){ console.warn(e); }
+  try{ if(S.dispCol) await S.dispCol.doc(idDispositivo()).delete(); }catch(e){ console.warn(e); }
+  LS.set('notifiche', false); LS.set('dispositivoCreato', null); S.notif='spente'; S.notifMsg={t:'Notifiche disattivate su questo telefono.', cls:'ok'}; render();
+}
+async function rinnovaTokenSeServe(){
+  try{
+    if(!LS.get('notifiche',false) || !CONFIG.vapidKey || !('Notification' in window) || Notification.permission!=='granted') return;
+    if(!(await F.messagingSupportato())) return;
+    const reg = await navigator.serviceWorker.ready;
+    const token = await F.getToken(await prendiMessaging(), {vapidKey: CONFIG.vapidKey, serviceWorkerRegistration: reg});
+    if(token) await salvaDispositivo(token);
+  }catch(e){ console.warn('[APParecchio] Rinnovo token notifiche non riuscito', e); }
+}
+app.addEventListener('click', async e=>{
+  const t=e.target.closest('button'); if(!t || S.view!=='emergenza') return;
+  if(t.id==='notif-attiva') return attivaNotifiche();
+  if(t.id==='notif-spegni') return spegniNotifiche();
+  if(t.id==='notif-prova'){
+    try{
+      const reg=await navigator.serviceWorker.ready;
+      await reg.showNotification('Kit emergenza · prova', {body:'Le notifiche funzionano su questo telefono.', icon:'icone/icona-192.png', badge:'icone/favicon-32.png', tag:'apparecchio-prova', data:{url:'./#emergenza'}});
+      S.notifMsg={t:'Notifica di prova inviata: dovrebbe comparire tra un istante.', cls:'ok'};
+    }catch(err){ console.error(err); S.notifMsg={t:'Non sono riuscito a mostrare la notifica di prova.', cls:'err'}; }
+    return render();
+  }
+});
+app.addEventListener('change', async e=>{
+  if(S.view!=='emergenza') return;
+  if(e.target.id==='notif-utente'){ LS.set('utente', e.target.value.replace(/\s+/g,' ').trim().slice(0,30)); }
+  else if(e.target.id==='notif-s1' || e.target.id==='notif-s2'){
+    const a=+$('#notif-s1').value, b=+$('#notif-s2').value;
+    LS.set('soglie', [a, ...(b && b<a ? [b] : [])]);
+  } else return;
+  if(LS.get('notifiche',false) && S.dispCol){
+    try{ await S.dispCol.doc(idDispositivo()).merge({utente: LS.get('utente',''), preferenze:{soglie: soglieQui()}, ultimo_uso:new Date().toISOString()}); S.notifMsg={t:'Preferenze salvate.', cls:'ok'}; }
+    catch(err){ S.notifMsg={t:'Preferenze salvate solo su questo telefono.', cls:'err'}; }
+    const st=$('#notif-stato'); if(st){ st.textContent=S.notifMsg.t; st.className='status '+S.notifMsg.cls; }
+  }
+});
 
 /* ---------- Codice di famiglia ---------- */
 function vistaCodice(){
@@ -1536,7 +1656,7 @@ function vistaCodiceFamiglia(){
 /* ---------- Avvio (Firebase) ---------- */
 function adattaDb(fs, base){
   const docW = ref => ({
-    set: d => F.setDoc(ref, d), delete: () => F.deleteDoc(ref),
+    set: d => F.setDoc(ref, d), merge: d => F.setDoc(ref, d, {merge:true}), delete: () => F.deleteDoc(ref),
     get: async () => { const s=await F.getDoc(ref); return {exists:s.exists(), data:()=>s.data()}; },
     onSnapshot: (n,e) => F.onSnapshot(ref, s=>n({exists:s.exists(), data:()=>s.data(), metadata:s.metadata}), e)
   });
@@ -1616,6 +1736,8 @@ async function collega(){
   const db = adattaDb(fb.fs, 'famiglie/'+S.codice);
   S.settCol=db.collection('settimane'); S.famRef=db.doc('impostazioni/famiglia');
   S.spunteCol=db.collection('spunte'); S.ricetteCol=db.collection('ricette'); S.pesiCol=db.collection('pesi');
+  S.dispCol=db.collection('emergenza_dispositivi');
+  setTimeout(rinnovaTokenSeServe, 4000);
   S.extraCol=db.collection('spesa_extra');
   S.extraCol.onSnapshot(snap=>{ if(snap.metadata.fromCache && !snap.size && S.extra.length) return; S.extra=snap.docs.map(d=>({id:d.id, ...d.data()})); LS.set('extra', S.extra); if((S.view==='spesa' || S.view==='emergenza') && !staScrivendo()) render(); }, e=>console.error(e));
   S.emCol=db.collection('emergenza_articoli'); S.emStatoRef=db.doc('emergenza_stato/controllo');
@@ -1674,7 +1796,7 @@ app.addEventListener('click', async e=>{
   }
   if(t.id==='esci'){ S.esciConferma=true; return render(); }
   if(t.id==='esci-no'){ S.esciConferma=false; return render(); }
-  if(t.id==='esci-si'){ ['codice','settimane','famiglia','spunte','pesi','pesoSel','emergenza','extra'].forEach(k=>{ try{ localStorage.removeItem('apparecchio:'+k) }catch(_){} }); location.reload(); return; }
+  if(t.id==='esci-si'){ if(LS.get('notifiche',false)){ try{ await Promise.race([spegniNotifiche(), new Promise(r=>setTimeout(r,2500))]); }catch(_){} } ['codice','settimane','famiglia','spunte','pesi','pesoSel','emergenza','extra','notifiche','dispositivoCreato'].forEach(k=>{ try{ localStorage.removeItem('apparecchio:'+k) }catch(_){} }); location.reload(); return; }
   if(t.id==='copia-codice'){ const st=$('#codice-stato'); try{ await navigator.clipboard.writeText(S.codice); st.textContent='Codice copiato.'; st.className='status ok'; }catch(_){ st.textContent='Tieni premuto sul codice per copiarlo.'; st.className='status'; } }
 });
 

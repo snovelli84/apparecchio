@@ -1,0 +1,7 @@
+node_modules/
+# Chiavi e account di servizio: non vanno mai nel repository
+*service-account*.json
+*serviceAccount*.json
+*-firebase-adminsdk-*.json
+apparecchio-backup-*.json
+apparecchio-per-github.zip

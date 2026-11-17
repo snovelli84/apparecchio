@@ -1,0 +1,12 @@
+{
+  "name": "apparecchio-build-firebase",
+  "private": true,
+  "description": "Rigenera firebase.js (librerie Firebase per il browser) dalla radice del repository: cd scripts/build-firebase && npm ci && npm run build",
+  "scripts": {
+    "build": "esbuild entry.js --bundle --format=esm --minify --target=es2020 --outfile=../../firebase.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.0",
+    "firebase": "12.19.0"
+  }
+}

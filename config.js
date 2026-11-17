@@ -14,6 +14,9 @@ export default {
   // Chiave del sito reCAPTCHA v3 per App Check (serve alle ricette se App Check è "Applicata" per AI Logic).
   // La crei su https://www.google.com/recaptcha/admin con il dominio snovelli84.github.io. Non è segreta.
   appCheckRecaptcha: "",
+  // Chiave pubblica Web Push (VAPID) per le notifiche del kit di emergenza.
+  // Console Firebase → Impostazioni progetto → Cloud Messaging → Certificati push web. Non è segreta.
+  vapidKey: "",
   // Ricette proposte con Gemini (Firebase AI Logic). Metti false per nascondere il tasto.
   ricette: true,
   // Modelli Gemini per le ricette, in ordine di preferenza: se il primo è occupato si prova il successivo.
