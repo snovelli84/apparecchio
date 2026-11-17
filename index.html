@@ -202,6 +202,10 @@ input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(
 .peso-voce .muted{font-size:13px;text-align:right}
 .peso-voce .btn{padding:6px 8px;justify-self:end}
 @media (max-width:380px){.peso-riga{grid-template-columns:1fr 1fr}.peso-riga .btn{grid-column:1/-1}.peso-stat b{font-size:16px}}
+.extra-item .qt{display:flex;align-items:center;gap:2px}
+.extra-item .qt .btn{padding:2px 8px;font-size:16px;line-height:1}
+.extra-item label.nm{cursor:pointer}
+.extra-form{margin:10px 0 4px}
 .em-stato{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .em-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;min-width:0}
 .em-tile b{font-family:var(--font-display);font-size:24px;line-height:1}
@@ -669,7 +673,7 @@ function vistaSpesa(){
       <div class="seg" role="group" aria-label="A partire da"><button data-da="oggi" aria-pressed="${da==='oggi'}">Da oggi</button><button data-da="domani" aria-pressed="${da==='domani'}">Da domani</button></div>
       <div class="ngrid num" role="group" aria-label="Numero di giorni">${[1,2,3,4,5,6,7].map(n=>`<button data-giorni="${n}" aria-label="${n} giorni">${n}</button>`).join('')}</div>
       <p class="muted" style="font-size:13px;margin:12px 0 0">${spostata ? `La dieta inizia ${dataBreve(start)}: conto i giorni da lì.` : da==='oggi' ? 'Da oggi include solo i pasti che non sono ancora passati.' : `Si parte da ${dataBreve(start)}.`}</p>
-    </section>`;
+    </section>${vistaExtra()}`;
   }
   const n=S.spesa.giorni, daOggi=da==='oggi';
   const pasti=pastiNelPeriodo(daOggi,n), lista=listaSpesa(daOggi,n);
@@ -681,17 +685,20 @@ function vistaSpesa(){
     ${(()=>{ const r=pasti.filter(x=>regola(x.data,x.p)); return r.length?`<div class="muted num" style="font-size:13px">Con meno persone: ${r.map(x=>GIORNI_BREVI[x.dow]+' '+x.p.label.toLowerCase()+' ('+personePer(x.data,x.p)+')').join(', ')}</div>`:'' })()}</div>
     <div class="row"><button class="btn" id="cambia-giorni">Cambia giorni</button></div></section>`;
   if(S.spunteErr) html += `<p class="notice warn">${esc(S.spunteErr)}</p>`;
-  if(!lista.length) return html + '<p class="notice">In questo periodo non ci sono ingredienti da comprare.</p>';
+  if(!lista.length) return html + '<p class="notice">In questo periodo non ci sono ingredienti da comprare.</p>' + vistaExtra();
   html += lista.map(([c,items])=>`<section class="card cat"><h3>${c}</h3>${items.map(it=>`
     <label class="item ${S.spunte[it.key]?'done':''}"><input type="checkbox" id="sp-${slug(it.key)}" data-spunta="${esc(it.key)}" ${S.spunte[it.key]?'checked':''}>
       <span class="nm">${esc(it.nome)}<span class="src">${esc([...new Set(it.usi)].join(' · '))}</span></span>
       <span class="qt num">${qtTesto(it)}${it.qb?`<small>q.b. per ${it.qb} ${it.qb===1?'pasto':'pasti'}</small>`:''}</span></label>`).join('')}</section>`).join('');
+  html += vistaExtra();
   html += `<div class="row" style="justify-content:space-between"><button class="btn primary" id="copia">Copia la lista</button><button class="btn ghost" id="azzera">Togli tutte le spunte</button></div><p class="status" id="copia-stato" aria-live="polite"></p>`;
   return html;
 }
 function testoLista(){
   const l=listaSpesa((S.spesa.da ?? daDefault())==='oggi', S.spesa.giorni);
-  return `APParecchio · spesa per ${S.spesa.giorni} giorni (${S.persone} persone)\n\n` + l.map(([c,a])=>c.toUpperCase()+'\n'+a.map(i=>`- ${i.nome}: ${qtTesto(i)}`).join('\n')).join('\n\n');
+  const ex=S.extra.filter(x=>!x.preso);
+  return `APParecchio · spesa per ${S.spesa.giorni} giorni (${S.persone} persone)\n\n` + l.map(([c,a])=>c.toUpperCase()+'\n'+a.map(i=>`- ${i.nome}: ${qtTesto(i)}`).join('\n')).join('\n\n')
+    + (ex.length ? '\n\nDA COMPRARE IN PIÙ\n'+ex.map(x=>`- ${x.nome}${x.quantita?': '+x.quantita:''}`).join('\n') : '');
 }
 
 /* Dieta */
@@ -992,7 +999,7 @@ app.addEventListener('input',e=>{
   if(e.target.id!=='testo-dieta' || !S.edit) return;
   S.edit.testo=e.target.value; S.edit.dirty=true; clearTimeout(bozzaTimer); bozzaTimer=setTimeout(aggiornaRiepilogo,300);
 });
-function staScrivendo(){ if(S.view==='emergenza') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.em-azioni')); if(S.view==='peso') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.peso-form')); return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || document.activeElement.id==='f-nome' || !!document.activeElement.closest('.regola-form')))) }
+function staScrivendo(){ if(S.view==='spesa') return !!(document.activeElement && document.activeElement.id==='extra-nome'); if(S.view==='emergenza') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.em-azioni')); if(S.view==='peso') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.peso-form')); return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || document.activeElement.id==='f-nome' || !!document.activeElement.closest('.regola-form')))) }
 
 /* ---------- Peso (facoltativo) ---------- */
 function personaSel(){ return S.pesi.find(p=>p.id===S.pesoSel) || S.pesi[0] || null }
@@ -1153,6 +1160,41 @@ app.addEventListener('keydown', e=>{
 });
 
 const VERSIONE_APP='17 nov 2026 · kit di emergenza';
+/* ---------- Spesa: voci in più (libere o dal kit di emergenza) ---------- */
+function vistaExtra(){
+  const voci=[...S.extra].sort((a,b)=>(a.creato_il||'').localeCompare(b.creato_il||''));
+  const prese=voci.filter(v=>v.preso).length;
+  return `<section class="card cat extra-box"><h3>Da comprare in più</h3>
+    ${voci.map(v=>`<div class="item extra-item ${v.preso?'done':''}"><input type="checkbox" id="ex-${esc(v.id)}" data-extra="${esc(v.id)}" ${v.preso?'checked':''}>
+      <label for="ex-${esc(v.id)}" class="nm">${esc(v.nome)}${v.origine==='emergenza'?'<span class="src">dal kit di emergenza</span>':''}</label>
+      <span class="qt num">${esc(v.quantita||'')}<button class="btn ghost" data-extra-del="${esc(v.id)}" aria-label="Togli ${esc(v.nome)}">×</button></span></div>`).join('')}
+    ${voci.length?'':'<p class="muted" style="margin:6px 0;font-size:13px">Qui finiscono le cose da comprare che non sono nella dieta.</p>'}
+    <div class="row extra-form"><input id="extra-nome" class="campo" maxlength="60" placeholder="Aggiungi una voce, es. carta igienica" autocomplete="off" style="flex:1;min-width:0"><button class="btn" id="extra-aggiungi">Aggiungi</button></div>
+    ${prese?`<div><button class="btn ghost" id="extra-pulisci">Togli le voci già prese (${prese})</button></div>`:''}
+  </section>`;
+}
+async function aggiungiExtra(nome, quantita, origine, articolo_id){
+  if(articolo_id && S.extra.some(x=>x.articolo_id===articolo_id && !x.preso)) return;
+  const v={id: slug(nome).slice(0,50)+'-'+Date.now().toString(36), nome, quantita:quantita||'', origine:origine||'manuale', articolo_id:articolo_id||null, preso:false, creato_il:new Date().toISOString()};
+  S.extra=[...S.extra, v]; LS.set('extra', S.extra);
+  if(S.view==='spesa') render();
+  if(S.extraCol){ const {id,...d}=v; try{ await S.extraCol.doc(id).set(d) }catch(e){ console.error(e) } }
+}
+async function scriviExtra(v){ LS.set('extra', S.extra); if(S.extraCol){ const {id,...d}=v; try{ await S.extraCol.doc(id).set(d) }catch(e){ console.error(e) } } }
+async function togliExtra(ids){ S.extra=S.extra.filter(x=>!ids.includes(x.id)); LS.set('extra', S.extra); render(); if(S.extraCol) for(const id of ids){ try{ await S.extraCol.doc(id).delete() }catch(e){ console.error(e) } } }
+app.addEventListener('click', async e=>{
+  const t=e.target.closest('button'); if(!t || S.view!=='spesa') return;
+  if(t.id==='extra-aggiungi'){ const n=$('#extra-nome').value.replace(/\s+/g,' ').trim(); if(!n) return $('#extra-nome').focus(); await aggiungiExtra(n,'','manuale',null); const i=$('#extra-nome'); if(i) i.focus(); return; }
+  if(t.dataset.extraDel) return togliExtra([t.dataset.extraDel]);
+  if(t.id==='extra-pulisci') return togliExtra(S.extra.filter(x=>x.preso).map(x=>x.id));
+});
+app.addEventListener('change', e=>{
+  const id=e.target.dataset && e.target.dataset.extra; if(!id) return;
+  const v=S.extra.find(x=>x.id===id); if(!v) return;
+  v.preso=e.target.checked; render(); scriviExtra(v);
+});
+app.addEventListener('keydown', e=>{ if(e.key==='Enter' && e.target.id==='extra-nome'){ e.preventDefault(); $('#extra-aggiungi').click(); } });
+
 /* ---------- Emergenza: kit per 72 ore ---------- */
 const CONTENITORI=[['zaino_adulto_1','Zaino adulto 1'],['zaino_adulto_2','Zaino adulto 2'],['zainetto_bambina','Zainetto bambina'],['scorta_casa','Scorta in casa'],['auto','Auto']];
 const CATEGORIE_EM=[['acqua','Acqua'],['cibo','Cibo'],['salute','Salute'],['documenti_soldi','Documenti e soldi'],['luce_energia','Luce ed energia'],['vestiti','Vestiti'],['igiene','Igiene'],['attrezzi','Attrezzi'],['bambina','Bambina']];
@@ -1574,6 +1616,8 @@ async function collega(){
   const db = adattaDb(fb.fs, 'famiglie/'+S.codice);
   S.settCol=db.collection('settimane'); S.famRef=db.doc('impostazioni/famiglia');
   S.spunteCol=db.collection('spunte'); S.ricetteCol=db.collection('ricette'); S.pesiCol=db.collection('pesi');
+  S.extraCol=db.collection('spesa_extra');
+  S.extraCol.onSnapshot(snap=>{ if(snap.metadata.fromCache && !snap.size && S.extra.length) return; S.extra=snap.docs.map(d=>({id:d.id, ...d.data()})); LS.set('extra', S.extra); if((S.view==='spesa' || S.view==='emergenza') && !staScrivendo()) render(); }, e=>console.error(e));
   S.emCol=db.collection('emergenza_articoli'); S.emStatoRef=db.doc('emergenza_stato/controllo');
   S.emCol.onSnapshot(snap=>{ if(snap.metadata.fromCache && !snap.size && S.emCaricato) return; impostaEmergenza(snap.docs.map(d=>({id:d.id, ...d.data()}))); if(S.view==='emergenza' && !staScrivendo()) render(); }, e=>{ console.error(e); S.emCaricato=true; });
   S.emStatoRef.onSnapshot(snap=>{ S.emControllo = snap.exists ? {fatti:{}, ...snap.data()} : {fatti:{}}; if(S.view==='emergenza' && !staScrivendo()) render(); }, ()=>{});
@@ -1662,6 +1706,7 @@ function registraSw(){
   const ls=LS.get('settimane',null); if(Array.isArray(ls) && ls.length) impostaSettimane(ls);
   const fam=LS.get('famiglia',null); if(fam) impostaFamiglia(fam);
   S.pesi=LS.get('pesi',[]) || []; S.pesoSel=LS.get('pesoSel',null);
+  S.extra=LS.get('extra',[]) || [];
   const em=LS.get('emergenza',null); if(Array.isArray(em)){ S.emArticoli=em; S.emCaricato=true; }
   render();
   setInterval(()=>{ if($('#sheet').hidden && (S.view==='oggi' || S.view==='settimana')) render() },60000);
