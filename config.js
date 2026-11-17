@@ -16,7 +16,7 @@ export default {
   appCheckRecaptcha: "",
   // Chiave pubblica Web Push (VAPID) per le notifiche del kit di emergenza.
   // Console Firebase → Impostazioni progetto → Cloud Messaging → Certificati push web. Non è segreta.
-  vapidKey: "",
+  vapidKey: "BGAHQf6sBY67WKBCbuUJpRLiQ0S8rpLxj5jZbjUH4BDk4sX0cSMqUdgqR36PDdqOqKMr04bxRdHZmtyyxCNQPEE",
   // Ricette proposte con Gemini (Firebase AI Logic). Metti false per nascondere il tasto.
   ricette: true,
   // Modelli Gemini per le ricette, in ordine di preferenza: se il primo è occupato si prova il successivo.
