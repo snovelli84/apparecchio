@@ -87,7 +87,8 @@ I telefoni con token non più valido vengono rimossi. Nel log non compaiono mai 
 **2. Account di servizio dedicato (solo i permessi necessari)**
 1. Apri <https://console.cloud.google.com/iam-admin/serviceaccounts?project=apparecchio> con lo stesso account Google di Firebase.
 2. **+ Crea account di servizio** → nome `notifiche-emergenza` → **Crea e continua**.
-3. Ruoli: aggiungi **Utente Cloud Datastore** (*Cloud Datastore User*) e **Amministratore Firebase Cloud Messaging** (*Firebase Cloud Messaging Admin*) → **Continua** → **Fine**.
+3. Ruoli: aggiungi **Utente Cloud Datastore** (*Cloud Datastore User*) e **Firebase Cloud Messaging API Admin** (`roles/firebasecloudmessaging.admin`) → **Continua** → **Fine**.
+   Attenzione: *non* "Firebase Cloud Messaging Admin" (`roles/firebasenotifications.admin`), che è della vecchia API e non permette di inviare con FCM V1.
 4. Apri l'account appena creato → scheda **Chiavi** → **Aggiungi chiave** → **Crea nuova chiave** → **JSON** → **Crea**. Si scarica un file `.json`.
 
 Non usare la chiave di "Firebase Admin SDK" da *Impostazioni progetto → Account di servizio*: funziona, ma dà accesso a tutto il progetto.
@@ -122,7 +123,7 @@ La registrazione dei telefoni per le notifiche (`getToken`) non è soggetta ad A
 |---|---|
 | "Firebase ha rifiutato la registrazione del telefono" | chiave VAPID sbagliata in `config.js`, oppure la chiave API del browser è limitata: Google Cloud → *API e servizi → Credenziali* → *Browser key (auto created by Firebase)* → nelle restrizioni API aggiungi *Firebase Cloud Messaging API*, *FCM Registration API* e *Firebase Installations API* |
 | Workflow con l'avviso "Manca il secret" | il secret `FIREBASE_SERVICE_ACCOUNT` non è stato creato o ha un altro nome |
-| Workflow con `PERMISSION_DENIED` | all'account di servizio manca uno dei due ruoli del passo 2 |
+| Workflow con `PERMISSION_DENIED` o `messaging/mismatched-credential` | all'account di servizio manca uno dei due ruoli del passo 2 (per FCM serve *Firebase Cloud Messaging API Admin*). Dopo aver cambiato i ruoli aspetta qualche minuto: la chiave e il secret non vanno rifatti |
 | La notifica di prova locale funziona, quella del workflow no | su iPhone l'app deve essere aperta dall'icona sulla Home; controlla anche che il telefono sia in `emergenza_dispositivi` |
 | Nessuna notifica per giorni | è normale se nessun articolo è entrato in una nuova soglia: lo script avvisa solo delle novità |
 
