@@ -28,7 +28,7 @@ img{max-width:100%}
 :root{
   --bg:#F2F5F1; --surface:#FFFFFF; --surface-2:#E7EDE6; --line:#D3DDD2;
   --ink:#16261E; --muted:#5B6E63; --accent:#2E7A55; --accent-ink:#FFFFFF; --accent-soft:#DCEFE3;
-  --warm:#E0782F; --warm-soft:#FBE7D7; --check:#9AAA9F;
+  --warm:#E0782F; --warm-soft:#FBE7D7; --check:#9AAA9F; --danger:#C0392B; --danger-soft:#F8DEDA;
   --font-display:"Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
   --font-body:"Figtree", "Segoe UI", system-ui, sans-serif;
   --r:14px; --shadow:0 1px 2px rgba(22,38,30,.06), 0 6px 18px rgba(22,38,30,.06);
@@ -36,11 +36,11 @@ img{max-width:100%}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F1814; --surface:#17231D; --surface-2:#1E2C25; --line:#2B3C33;
   --ink:#E7F0EA; --muted:#97AA9F; --accent:#5DC08C; --accent-ink:#0B1A12; --accent-soft:#1D3A2B;
-  --warm:#F29A55; --warm-soft:#3A2617; --check:#5D6E64; --shadow:none; color-scheme:dark;}}
+  --warm:#F29A55; --warm-soft:#3A2617; --check:#5D6E64; --danger:#F08070; --danger-soft:#3D1D19; --shadow:none; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0F1814; --surface:#17231D; --surface-2:#1E2C25; --line:#2B3C33;
   --ink:#E7F0EA; --muted:#97AA9F; --accent:#5DC08C; --accent-ink:#0B1A12; --accent-soft:#1D3A2B;
-  --warm:#F29A55; --warm-soft:#3A2617; --check:#5D6E64; --shadow:none; color-scheme:dark;}
+  --warm:#F29A55; --warm-soft:#3A2617; --check:#5D6E64; --danger:#F08070; --danger-soft:#3D1D19; --shadow:none; color-scheme:dark;}
 
 html,body{background:var(--bg)}
 body{color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
@@ -66,8 +66,8 @@ button:focus-visible,textarea:focus-visible,input:focus-visible,a:focus-visible{
 /* Tab bar */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);
   padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
-.tabs nav{max-width:600px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
-.tabs button{background:none;border:0;padding:10px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--muted)}
+.tabs nav{max-width:600px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
+.tabs button{background:none;border:0;padding:10px 2px 12px;min-width:0;letter-spacing:-.01em;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--muted)}
 .tabs button svg{width:22px;height:22px}
 .tabs button[aria-current="page"]{color:var(--accent)}
 .tabs button[aria-current="page"] .pill{background:var(--accent-soft)}
@@ -202,6 +202,28 @@ input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(
 .peso-voce .muted{font-size:13px;text-align:right}
 .peso-voce .btn{padding:6px 8px;justify-self:end}
 @media (max-width:380px){.peso-riga{grid-template-columns:1fr 1fr}.peso-riga .btn{grid-column:1/-1}.peso-stat b{font-size:16px}}
+.em-stato{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.em-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;min-width:0}
+.em-tile b{font-family:var(--font-display);font-size:24px;line-height:1}
+.em-tile span{font-size:12.5px;color:var(--muted);font-weight:600}
+.em-tile.scaduto b{color:var(--danger)} .em-tile.in_scadenza b{color:var(--warm)} .em-tile.da_comprare b{color:var(--accent)}
+.em-tile[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.em-riga{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.em-info{min-width:0}.em-info b{font-weight:600;display:block}.em-info small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.em-badge{font-size:12px;font-weight:700;border-radius:99px;padding:3px 9px;white-space:nowrap;background:var(--surface-2);color:var(--muted)}
+.em-badge.scaduto{background:var(--danger-soft);color:var(--danger)} .em-badge.in_scadenza{background:var(--warm-soft);color:var(--warm)} .em-badge.da_comprare{background:var(--accent-soft);color:var(--accent)}
+.em-azioni{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:2px 4px;align-items:center;margin-left:-6px}
+.em-azioni .btn.ghost{padding:5px 6px;font-size:13px}
+.em-azioni .status{margin:0 6px}
+.em-mini{display:flex;flex-direction:column;gap:4px;margin-left:6px;min-width:0;flex:1 1 180px}
+.em-progresso{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}.em-progresso span{display:block;height:100%;background:var(--accent);border-radius:99px}
+.em-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.em-form label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.em-form .largo{grid-column:1/-1}
+.em-form fieldset{border:0;padding:0;margin:0;display:flex;flex-direction:column;gap:4px;min-width:0}
+.em-form .em-check{flex-direction:row;align-items:center;gap:8px;font-size:14px}
+.em-check input{width:20px;height:20px;accent-color:var(--accent)}
+@media (max-width:380px){.em-tile b{font-size:20px}.em-form{grid-template-columns:1fr}}
 /* Sheet */
 .sheet-bg{position:fixed;inset:0;z-index:40;background:rgba(10,20,15,.45);display:flex;align-items:flex-end;justify-content:center}
 .sheet{width:100%;max-width:600px;max-height:88vh;overflow:auto;background:var(--bg);border-radius:20px 20px 0 0;box-sizing:border-box;
@@ -242,6 +264,7 @@ input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(
   <button data-view="oggi"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="7"/><path d="M12 9.5V13l2.5 1.5M9 2.5h6"/></svg></span>Adesso</button>
   <button data-view="settimana"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg></span>Settimana</button>
   <button data-view="spesa"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.2l2.3 11h10.8l2-8H7"/><circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/></svg></span>Spesa</button>
+  <button data-view="emergenza"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M12 8.5v6M9 11.5h6"/></svg></span>Emergenza</button>
   <button data-view="peso"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M8 9.5a5 5 0 0 1 8 0"/><path d="M12 9.5l1.5-2"/></svg></span>Peso</button>
   <button data-view="dieta"><span class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5l5 5L9 20H4v-5z"/><path d="M12.5 6.5l5 5"/></svg></span>Dieta</button>
 </nav></div>
@@ -404,13 +427,13 @@ function nGiorni(r){ return Object.keys(r.settimana).length + Object.keys(r.data
 const LS = { get(k,d){ try{ const v=localStorage.getItem('apparecchio:'+k); return v==null?d:JSON.parse(v) }catch(e){ return d } },
              set(k,v){ try{ localStorage.setItem('apparecchio:'+k, JSON.stringify(v)) }catch(e){} } };
 const S = {
-  view:'oggi', settimane:[], pesi:[], pesoSel:null, datati:{}, assenze:[], persone:3,
+  view:'oggi', settimane:[], pesi:[], pesoSel:null, emArticoli:[], emCaricato:false, emControllo:{fatti:{}}, extra:[], datati:{}, assenze:[], persone:3,
   stato:'loading', settCol:null, famRef:null, spunteCol:null, ricetteCol:null, sample:null,
   giornoSel:null, filtroTipo:null, settSel:null,
   edit:null, // {id, inizio, testo, nuova, conferma}
   spesa:{giorni:null, da:null}, spunte: LS.get('spunte',{}), spunteErr:''
 };
-const VIEWS = ['oggi','settimana','spesa','peso','dieta'];
+const VIEWS = ['oggi','settimana','spesa','emergenza','peso','dieta'];
 
 /* ---------- Date ---------- */
 function minuti(d){ return d.getHours()*60+d.getMinutes() }
@@ -803,7 +826,7 @@ function render(){
   const nf=$('#nome-famiglia'), nome=(S.codice && S.nomeFamiglia)||'';
   nf.textContent = nome ? (/^famiglia\b/i.test(nome) ? nome : 'Famiglia '+nome) : ''; nf.hidden = !nome;
   if(!S.codice){ app.innerHTML=vistaCodice(); return; }
-  app.innerHTML = `<div class="view stack">${S.erroreAvvio?`<p class="notice warn">${esc(S.erroreAvvio)}</p>`:''}${({oggi:vistaOggi, settimana:vistaSettimana, spesa:vistaSpesa, peso:vistaPeso, dieta:vistaDieta})[S.view]()}</div>`;
+  app.innerHTML = `<div class="view stack">${S.erroreAvvio?`<p class="notice warn">${esc(S.erroreAvvio)}</p>`:''}${({oggi:vistaOggi, settimana:vistaSettimana, spesa:vistaSpesa, peso:vistaPeso, emergenza:vistaEmergenza, dieta:vistaDieta})[S.view]()}</div>`;
 }
 function vai(v){ if(!VIEWS.includes(v)) v='oggi'; if(v==='spesa' && S.view!=='spesa') S.spesa.giorni=null; S.view=v; if(location.hash!=='#'+v) history.replaceState(null,'','#'+v); render(); window.scrollTo(0,0); }
 
@@ -969,7 +992,7 @@ app.addEventListener('input',e=>{
   if(e.target.id!=='testo-dieta' || !S.edit) return;
   S.edit.testo=e.target.value; S.edit.dirty=true; clearTimeout(bozzaTimer); bozzaTimer=setTimeout(aggiornaRiepilogo,300);
 });
-function staScrivendo(){ if(S.view==='peso') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.peso-form')); return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || document.activeElement.id==='f-nome' || !!document.activeElement.closest('.regola-form')))) }
+function staScrivendo(){ if(S.view==='emergenza') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.em-azioni')); if(S.view==='peso') return !!(document.activeElement && document.activeElement.closest && document.activeElement.closest('.peso-form')); return S.view==='dieta' && ((S.edit && S.edit.dirty) || (document.activeElement && (document.activeElement.id==='testo-dieta' || document.activeElement.id==='f-nome' || !!document.activeElement.closest('.regola-form')))) }
 
 /* ---------- Peso (facoltativo) ---------- */
 function personaSel(){ return S.pesi.find(p=>p.id===S.pesoSel) || S.pesi[0] || null }
@@ -1129,7 +1152,319 @@ app.addEventListener('keydown', e=>{
   if(e.target.id==='peso-nome'){ e.preventDefault(); $('#peso-crea').click(); }
 });
 
-const VERSIONE_APP='10 nov 2026 · ricette calde e fredde';
+const VERSIONE_APP='17 nov 2026 · kit di emergenza';
+/* ---------- Emergenza: kit per 72 ore ---------- */
+const CONTENITORI=[['zaino_adulto_1','Zaino adulto 1'],['zaino_adulto_2','Zaino adulto 2'],['zainetto_bambina','Zainetto bambina'],['scorta_casa','Scorta in casa'],['auto','Auto']];
+const CATEGORIE_EM=[['acqua','Acqua'],['cibo','Cibo'],['salute','Salute'],['documenti_soldi','Documenti e soldi'],['luce_energia','Luce ed energia'],['vestiti','Vestiti'],['igiene','Igiene'],['attrezzi','Attrezzi'],['bambina','Bambina']];
+const RICORRENZE=[[0,'Nessun controllo periodico'],[30,'Ogni mese'],[90,'Ogni 3 mesi'],[180,'Ogni 6 mesi'],[365,'Ogni anno']];
+const UNITA_EM=['pz','L','conf.','€','kit'];
+const PER_SPESA=['cibo','acqua','igiene','bambina'];
+const nomeCont=k=>(CONTENITORI.find(c=>c[0]===k)||[k,k])[1];
+const nomeCat=k=>(CATEGORIE_EM.find(c=>c[0]===k)||[k,k])[1];
+const ICONA_SCUDO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.6-3.2 8.2-7.5 9.5-4.3-1.3-7.5-4.9-7.5-9.5V6z"/><path d="M12 8.5v6M9 11.5h6"/></svg>';
+
+/* Prossima scadenza effettiva: la data di scadenza o il prossimo controllo periodico, la più vicina */
+function prossimaEm(a){
+  const c=[];
+  if(a.scadenza) c.push({data:a.scadenza, tipo:'scadenza'});
+  if(a.ricorrenza_giorni>0) c.push({data: a.ultimo_controllo ? iso(addDays(daIso(a.ultimo_controllo), a.ricorrenza_giorni)) : iso(new Date()), tipo:'controllo'});
+  c.sort((x,y)=>x.data<y.data?-1:x.data>y.data?1:0);
+  return c[0] || {data:null, tipo:null};
+}
+function statoEm(a){
+  const p=prossimaEm(a);
+  if(a.presente===false) return {stato:'da_comprare', giorni:null, ...p};
+  if(!p.data) return {stato:'ok', giorni:null, ...p};
+  const g=diffG(daIso(p.data), new Date());
+  return {stato: g<0?'scaduto' : g<=30?'in_scadenza' : 'ok', giorni:g, ...p};
+}
+function dataScad(d, soloMese){ const z=daIso(d); return soloMese ? `${String(z.getMonth()+1).padStart(2,'0')}/${z.getFullYear()}` : `${z.getDate()} ${MESI[z.getMonth()].slice(0,3)} ${z.getFullYear()}` }
+function testoScadenza(a, st){
+  if(st.stato==='da_comprare') return 'da comprare';
+  if(!st.data) return '';
+  const g=st.giorni, ctrl=st.tipo==='controllo', gg=n=>`${n} ${n===1?'giorno':'giorni'}`;
+  if(g<0) return ctrl ? `controllo scaduto da ${gg(-g)}` : `scaduto da ${gg(-g)}`;
+  if(g===0) return ctrl ? 'da controllare oggi' : 'scade oggi';
+  if(g<=60) return (ctrl?'controllo ':'')+`tra ${gg(g)}`;
+  return ctrl ? `controllo il ${dataScad(st.data)}` : `scade ${a.scadenza_solo_mese?'a ':'il '}${dataScad(st.data, a.scadenza_solo_mese)}`;
+}
+function badgeEm(a, st){ const t=testoScadenza(a, st); return t ? `<span class="em-badge ${st.stato}">${esc(t)}</span>` : '' }
+function qtaEm(a){ return a.quantita!=null && a.quantita!=='' ? `${fmtN(+a.quantita)} ${a.unita||''}`.trim() : '' }
+function utenteQui(){ return LS.get('utente','') || (personaSel() && personaSel().nome) || 'un telefono di famiglia' }
+
+function vistaEmergenza(){
+  if(!S.emCaricato) return `<div class="card empty"><h2>Apro il kit…</h2><p class="muted">Sto caricando gli articoli del kit di emergenza.</p></div>`;
+  const art=S.emArticoli;
+  let html = `<div class="sec-h"><h3>Kit di emergenza</h3><button class="btn primary" id="em-nuovo">+ Articolo</button></div>`;
+  if(S.emMsg) html += `<p class="status ${S.emMsg.cls}" aria-live="polite">${esc(S.emMsg.t)}</p>`;
+  if(!art.length){
+    html += `<section class="card ask"><div class="label">Emergenza</div><h2 style="margin-top:6px">Il kit è ancora vuoto</h2>
+      <p class="muted" style="margin:8px 0 14px">Tieni traccia di cosa c'è negli zaini e in casa, di cosa scade e di cosa va controllato periodicamente.</p>
+      <div class="row"><button class="btn primary" id="em-kit">${S.emImporto?'Sto caricando…':'Carica kit iniziale'}</button><span class="muted" style="font-size:13px">circa 50 articoli già divisi per contenitore</span></div></section>`;
+    return html + vistaNotifiche();
+  }
+  const stati=new Map(art.map(a=>[a.id, statoEm(a)]));
+  const conta=k=>art.filter(a=>stati.get(a.id).stato===k).length;
+  const fs=S.emFiltroStato||'', fc=S.emFiltroCat||'';
+  html += `<div class="em-stato num" role="group" aria-label="Filtra per stato">
+    ${[['scaduto','Scaduti'],['in_scadenza','Entro 30 giorni'],['da_comprare','Da comprare']].map(([k,l])=>`<button class="em-tile ${k}" data-em-stato="${k}" aria-pressed="${fs===k}"><b>${conta(k)}</b><span>${l}</span></button>`).join('')}
+  </div>
+  <div class="seg" role="group" aria-label="Vista" style="margin:0"><button data-em-vista="elenco" aria-pressed="${S.emVista!=='controllo'}">Elenco</button><button data-em-vista="controllo" aria-pressed="${S.emVista==='controllo'}">Controllo semestrale</button></div>`;
+  if(S.emVista==='controllo') return html + vistaControllo(art, stati) + vistaNotifiche();
+  const catPresenti=CATEGORIE_EM.filter(([k])=>art.some(a=>a.categoria===k));
+  html += `<div class="chips" role="group" aria-label="Filtra per categoria"><button class="chip" data-em-cat="" aria-pressed="${!fc}">Tutte</button>${catPresenti.map(([k,l])=>`<button class="chip" data-em-cat="${k}" aria-pressed="${fc===k}">${l}</button>`).join('')}</div>`;
+  if(fs||fc) html += `<p class="muted" style="margin:0;font-size:13px">Filtro attivo: ${[fs&&({scaduto:'scaduti',in_scadenza:'entro 30 giorni',da_comprare:'da comprare'})[fs], fc&&nomeCat(fc).toLowerCase()].filter(Boolean).join(' · ')} <button class="btn ghost" id="em-togli-filtri">Togli i filtri</button></p>`;
+  const vis=art.filter(a=>(!fs || stati.get(a.id).stato===fs) && (!fc || a.categoria===fc));
+  if(!vis.length) html += '<p class="notice">Nessun articolo con questi filtri.</p>';
+  for(const [ck,cl] of CONTENITORI){
+    const righe=vis.filter(a=>a.contenitore===ck).sort(ordineEm(stati));
+    if(!righe.length) continue;
+    html += `<section class="card cat"><h3>${cl} <span class="muted num" style="font-weight:500">· ${righe.length}</span></h3>${righe.map(a=>rigaEm(a, stati.get(a.id))).join('')}</section>`;
+  }
+  const altri=vis.filter(a=>!CONTENITORI.some(c=>c[0]===a.contenitore));
+  if(altri.length) html += `<section class="card cat"><h3>Altro</h3>${altri.map(a=>rigaEm(a, stati.get(a.id))).join('')}</section>`;
+  html += `<div class="row" style="justify-content:space-between"><button class="btn" id="em-ics">Esporta scadenze (.ics)</button><span class="muted" style="font-size:13px">per il calendario del telefono, come promemoria di riserva</span></div>`;
+  return html + vistaNotifiche();
+}
+function ordineEm(stati){ const r={scaduto:0,in_scadenza:1,da_comprare:2,ok:3}; return (a,b)=>{ const x=stati.get(a.id), y=stati.get(b.id); return (r[x.stato]-r[y.stato]) || ((x.data||'9')<(y.data||'9')?-1:(x.data||'9')>(y.data||'9')?1:0) || a.nome.localeCompare(b.nome,'it'); } }
+function rigaEm(a, st){
+  const info=[qtaEm(a), nomeCat(a.categoria)].filter(Boolean).join(' · ');
+  const inSpesa=S.extra.some(x=>x.articolo_id===a.id && !x.preso);
+  const spesa = !!S.extraCol && PER_SPESA.includes(a.categoria) && ['scaduto','in_scadenza','da_comprare'].includes(st.stato);
+  let az;
+  if(S.emDel===a.id) az=`<span class="status err">Eliminare "${esc(a.nome)}"?</span><button class="btn" data-em-del-si="${a.id}">Elimina</button><button class="btn ghost" data-em-annulla="1">Annulla</button>`;
+  else if(S.emOk===a.id) az=`<label class="em-mini"><span class="label">Nuova scadenza (facoltativa)</span><input type="month" id="em-ok-mese" class="campo" value="${a.scadenza?a.scadenza.slice(0,7):''}"></label><button class="btn primary" data-em-ok-salva="${a.id}">Salva</button><button class="btn ghost" data-em-ok-salva="${a.id}" data-stessa="1">Scadenza invariata</button>`;
+  else az=`<button class="btn ghost" data-em-ok="${a.id}" title="Controllato o sostituito oggi">✓ Controllato</button><button class="btn ghost" data-em-mod="${a.id}">Modifica</button><button class="btn ghost" data-em-del="${a.id}">Elimina</button>${spesa?(inSpesa?'<span class="muted" style="font-size:12.5px">già nella spesa</span>':`<button class="btn ghost" data-em-spesa="${a.id}">+ Spesa</button>`):''}`;
+  return `<div class="em-riga"><div class="em-info"><b>${esc(a.nome)}</b><small class="num">${esc(info)}${a.note?' · '+esc(a.note):''}</small></div>${badgeEm(a, st)}<div class="em-azioni">${az}</div></div>`;
+}
+
+/* Controllo semestrale: checklist condivisa, contenitore per contenitore */
+function vistaControllo(art, stati){
+  const fatti=(S.emControllo && S.emControllo.fatti) || {};
+  const n=art.filter(a=>fatti[a.id]).length;
+  let html=`<section class="card settimana-box"><div class="row" style="justify-content:space-between"><h3 style="font-size:18px">Controllo semestrale</h3><span class="num muted">${n}/${art.length}</span></div>
+    <div class="em-progresso" aria-hidden="true"><span style="width:${art.length?Math.round(n/art.length*100):0}%"></span></div>
+    <p class="muted" style="margin:0;font-size:13px">Apri un contenitore alla volta e spunta ogni articolo dopo averlo controllato: scadenza, integrità, carica, taglia. La spunta segna anche "controllato oggi" sull'articolo. La lista è condivisa: potete dividervi i contenitori.</p></section>`;
+  for(const [ck,cl] of CONTENITORI){
+    const righe=art.filter(a=>a.contenitore===ck).sort((a,b)=>a.nome.localeCompare(b.nome,'it'));
+    if(!righe.length) continue;
+    const nf=righe.filter(a=>fatti[a.id]).length;
+    html += `<section class="card cat"><h3>${cl} <span class="muted num" style="font-weight:500">· ${nf}/${righe.length}</span></h3>${righe.map(a=>{ const st=stati.get(a.id); return `
+      <label class="item ${fatti[a.id]?'done':''}"><input type="checkbox" id="ctl-${a.id}" data-em-ctl="${a.id}" ${fatti[a.id]?'checked':''}>
+        <span class="nm">${esc(a.nome)}<span class="src">${esc([qtaEm(a), a.note].filter(Boolean).join(' · '))}</span></span>
+        <span class="qt">${badgeEm(a, st)}</span></label>`; }).join('')}</section>`;
+  }
+  html += `<div class="row" style="justify-content:space-between"><button class="btn primary" id="em-ctl-fine" ${n?'':'disabled'}>Concludi il controllo</button>${n?'<button class="btn ghost" id="em-ctl-reset">Ricomincia da capo</button>':''}</div>`;
+  return html;
+}
+
+/* Modulo aggiungi / modifica */
+function apriFormEm(id){
+  const a=S.emArticoli.find(x=>x.id===id) || {nome:'', contenitore:'scorta_casa', categoria:'cibo', quantita:1, unita:'pz', scadenza:null, scadenza_solo_mese:false, ricorrenza_giorni:0, ultimo_controllo:null, presente:true, note:''};
+  const ric=RICORRENZE.some(r=>r[0]===(a.ricorrenza_giorni||0)) ? RICORRENZE : [...RICORRENZE, [a.ricorrenza_giorni, `Ogni ${a.ricorrenza_giorni} giorni`]];
+  const soloMese=!!a.scadenza_solo_mese;
+  $('#sheet-body').innerHTML=`<div class="label">Kit di emergenza</div><h2 id="sheet-title" style="margin:6px 0 12px">${id?'Modifica articolo':'Nuovo articolo'}</h2>
+  <form id="form-em" class="em-form" data-id="${id||''}">
+    <label class="largo"><span class="label">Nome</span><input id="em-nome" class="campo" required maxlength="80" value="${esc(a.nome)}" placeholder="es. Pile AA"></label>
+    <label><span class="label">Contenitore</span><select id="em-cont" class="campo">${CONTENITORI.map(([k,l])=>`<option value="${k}" ${a.contenitore===k?'selected':''}>${l}</option>`).join('')}</select></label>
+    <label><span class="label">Categoria</span><select id="em-cat" class="campo">${CATEGORIE_EM.map(([k,l])=>`<option value="${k}" ${a.categoria===k?'selected':''}>${l}</option>`).join('')}</select></label>
+    <label><span class="label">Quantità</span><input id="em-qta" class="campo num" type="number" min="0" step="any" inputmode="decimal" value="${a.quantita!=null?a.quantita:''}"></label>
+    <label><span class="label">Unità</span><input id="em-unita" class="campo" list="em-unita-lista" maxlength="10" value="${esc(a.unita||'')}"><datalist id="em-unita-lista">${UNITA_EM.map(u=>`<option value="${u}">`).join('')}</datalist></label>
+    <fieldset class="largo em-scad"><legend class="label">Scadenza</legend>
+      <div class="seg" role="group" style="margin:0 0 6px"><button type="button" data-em-scad="giorno" aria-pressed="${!soloMese}">Giorno</button><button type="button" data-em-scad="mese" aria-pressed="${soloMese}">Solo mese e anno</button></div>
+      <input type="date" id="em-scad-giorno" class="campo" value="${a.scadenza&&!soloMese?a.scadenza:''}" ${soloMese?'hidden':''}>
+      <input type="month" id="em-scad-mese" class="campo" value="${a.scadenza&&soloMese?a.scadenza.slice(0,7):''}" ${soloMese?'':'hidden'}>
+      <span class="muted" style="font-size:12.5px">Lascia vuoto se non scade.</span></fieldset>
+    <label><span class="label">Controllo periodico</span><select id="em-ric" class="campo">${ric.map(([v,l])=>`<option value="${v}" ${(a.ricorrenza_giorni||0)===v?'selected':''}>${l}</option>`).join('')}</select></label>
+    <label><span class="label">Ultimo controllo</span><input type="date" id="em-ultimo" class="campo" value="${a.ultimo_controllo||''}" max="${iso(new Date())}"></label>
+    <label class="largo em-check"><input type="checkbox" id="em-presente" ${a.presente!==false?'checked':''}> È già nel kit (togli la spunta se è da comprare)</label>
+    <label class="largo"><span class="label">Note</span><input id="em-note" class="campo" maxlength="160" value="${esc(a.note||'')}"></label>
+    <p class="status err largo" id="em-form-err" aria-live="polite"></p>
+    <div class="row largo"><button class="btn primary" type="submit">${id?'Salva le modifiche':'Aggiungi al kit'}</button></div>
+  </form>`;
+  $('#sheet').hidden=false; setTimeout(()=>{ const n=$('#em-nome'); if(n && !id) n.focus(); },50);
+}
+function fineMese(ym){ const [y,m]=ym.split('-').map(Number); return iso(new Date(y, m, 0, 12)) }
+async function salvaArticolo(a){
+  const {id, ...dati}=a;
+  dati.aggiornato_da=utenteQui(); dati.aggiornato_il=new Date().toISOString();
+  const i=S.emArticoli.findIndex(x=>x.id===id);
+  if(i>=0) S.emArticoli[i]={id, ...dati}; else S.emArticoli.push({id, ...dati});
+  LS.set('emergenza', S.emArticoli);
+  if(S.view==='emergenza') render();
+  if(!S.emCol) return true;
+  try{ await S.emCol.doc(id).set(dati); return true; }
+  catch(e){ console.error(e); S.emMsg={t:'Salvato solo su questo telefono: non riesco ad aggiornare i dati di famiglia.', cls:'err'}; if(S.view==='emergenza') render(); return false; }
+}
+function impostaEmergenza(docs){
+  S.emArticoli=docs.filter(d=>d && d.nome).map(d=>({...d}));
+  S.emCaricato=true; LS.set('emergenza', S.emArticoli);
+}
+
+/* Kit iniziale (da caricare una sola volta) */
+const KIT_INIZIALE=[
+  ['Acqua in bottiglia',['scorta_casa'],'acqua',30,'L',0,'obiettivo 72 h; ideale 125 L per 2 settimane; inserire scadenza'],
+  ['Borraccia acqua',['zaino_adulto_1','zaino_adulto_2','zainetto_bambina'],'acqua',1,'pz',0,''],
+  ['Filtro LifeStraw',['zaino_adulto_1'],'acqua',1,'pz',180,'non scade, controllare integrità'],
+  ['Scatolette (tonno, legumi, carne)',['scorta_casa'],'cibo',12,'pz',0,'inserire scadenza'],
+  ['Gallette / cracker',['scorta_casa'],'cibo',4,'conf.',0,'inserire scadenza'],
+  ['Barrette',['zaino_adulto_1','zaino_adulto_2'],'cibo',6,'pz',0,'inserire scadenza'],
+  ['Latte UHT / succhi monoporzione',['scorta_casa'],'cibo',9,'pz',0,'inserire scadenza'],
+  ['Snack bambina',['zainetto_bambina'],'bambina',3,'pz',0,'inserire scadenza'],
+  ['Apriscatole Westmark',['zaino_adulto_2'],'attrezzi',1,'pz',0,''],
+  ['Posate campeggio HOTUT',['zaino_adulto_1','zaino_adulto_2','zainetto_bambina'],'attrezzi',1,'pz',0,''],
+  ['Medicine personali (7 giorni)',['zaino_adulto_1'],'salute',1,'conf.',0,'inserire scadenza più vicina'],
+  ['Kit primo soccorso',['zaino_adulto_1'],'salute',1,'pz',180,''],
+  ['Antidolorifici/antifebbrili pediatrici',['zaino_adulto_1'],'salute',1,'conf.',0,'inserire scadenza'],
+  ['Mascherine FFP2',['zaino_adulto_1','zaino_adulto_2'],'salute',3,'pz',0,'inserire scadenza'],
+  ['Copie documenti in busta impermeabile',['zaino_adulto_1'],'documenti_soldi',1,'pz',365,'verificare validità dei documenti'],
+  ['Chiavetta Lexar con impronta',['zaino_adulto_1'],'documenti_soldi',1,'pz',180,'aggiornare le scansioni'],
+  ['Contanti piccolo taglio',['zaino_adulto_1'],'documenti_soldi',170,'€',365,''],
+  ['Copia chiavi casa e auto',['zaino_adulto_2'],'documenti_soldi',1,'pz',0,''],
+  ["Lista contatti e punti d'incontro (carta)",['zaino_adulto_1','zainetto_bambina'],'documenti_soldi',1,'pz',180,''],
+  ['Radio a manovella/solare',['scorta_casa'],'luce_energia',1,'pz',90,'ricaricare e provare'],
+  ['Powerbank Anker 20000 mAh',['zaino_adulto_1','zaino_adulto_2'],'luce_energia',1,'pz',90,'ricaricare'],
+  ['Lampada frontale Blukar',['zaino_adulto_1','zaino_adulto_2','zainetto_bambina'],'luce_energia',1,'pz',90,'ricaricare'],
+  ['Pile AA/AAA Amazon Basics',['scorta_casa'],'luce_energia',48,'pz',0,'scadenza circa 10 anni, inserire data'],
+  ['Fischietto',['zaino_adulto_1','zaino_adulto_2','zainetto_bambina'],'attrezzi',1,'pz',0,''],
+  ['Coltellino Victorinox Huntsman',['zaino_adulto_1'],'attrezzi',1,'pz',0,''],
+  ['Buste impermeabili Noaks',['zaino_adulto_1'],'attrezzi',5,'pz',0,''],
+  ['Cambio vestiti bambina',['zainetto_bambina'],'vestiti',1,'pz',180,'controllare la taglia'],
+  ['Cambio vestiti adulti',['zaino_adulto_1','zaino_adulto_2'],'vestiti',1,'pz',365,''],
+  ['Coperte termiche',['zaino_adulto_1','zaino_adulto_2'],'vestiti',2,'pz',0,''],
+  ['Igiene (salviette, gel, assorbenti, sapone)',['zaino_adulto_1','zaino_adulto_2'],'igiene',1,'kit',180,''],
+  ['Rilevatori di fumo',['scorta_casa'],'attrezzi',null,'',365,'cambiare le batterie'],
+  ['Controllo generale del kit',['scorta_casa'],'attrezzi',null,'',180,'scadenze, taglie, contatti']
+];
+function articoliKitIniziale(){
+  const oggi=iso(new Date()), out=[];
+  KIT_INIZIALE.forEach(([nome,conts,categoria,quantita,unita,ric,note])=>conts.forEach(contenitore=>{
+    out.push({id:slug(nome).slice(0,60)+'-'+contenitore.replace(/_/g,'-'), nome, contenitore, categoria, quantita, unita, scadenza:null, scadenza_solo_mese:false,
+      ricorrenza_giorni:ric, ultimo_controllo: ric? oggi : null, presente:true, note});
+  }));
+  return out;
+}
+
+/* Export calendario (.ics) */
+function escIcs(t){ return String(t).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n') }
+function piegaIcs(r){ const out=[]; let s=r; while(s.length>60){ out.push(s.slice(0,60)); s=' '+s.slice(60); } out.push(s); return out.join('\r\n') }
+function esportaIcs(){
+  const ora=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const ev=S.emArticoli.filter(a=>a.presente!==false).map(a=>({a, st:statoEm(a)})).filter(x=>x.st.data);
+  const righe=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//APParecchio//Kit emergenza//IT','CALSCALE:GREGORIAN','X-WR-CALNAME:Kit di emergenza'];
+  for(const {a,st} of ev){
+    const d=st.data.replace(/-/g,''), d2=iso(addDays(daIso(st.data),1)).replace(/-/g,'');
+    const cosa = st.tipo==='controllo' ? 'Controllare' : 'Scade';
+    righe.push('BEGIN:VEVENT', `UID:${a.id}-${d}@apparecchio`, `DTSTAMP:${ora}`, `DTSTART;VALUE=DATE:${d}`, `DTEND;VALUE=DATE:${d2}`,
+      piegaIcs(`SUMMARY:${escIcs(`Kit emergenza · ${cosa}: ${a.nome} (${nomeCont(a.contenitore)})`)}`),
+      piegaIcs(`DESCRIPTION:${escIcs([qtaEm(a), a.note].filter(Boolean).join(' · ') || 'Kit di emergenza APParecchio')}`),
+      'BEGIN:VALARM','ACTION:DISPLAY','TRIGGER:-P7D',piegaIcs(`DESCRIPTION:${escIcs(cosa+': '+a.nome)}`),'END:VALARM','END:VEVENT');
+  }
+  righe.push('END:VCALENDAR');
+  const testoIcs=righe.map(r=>r.includes('\r\n')?r:piegaIcs(r)).join('\r\n')+'\r\n';
+  const link=document.createElement('a');
+  link.href=URL.createObjectURL(new Blob([testoIcs],{type:'text/calendar'}));
+  link.download='kit-emergenza-'+iso(new Date())+'.ics'; document.body.appendChild(link); link.click(); link.remove();
+  S.emMsg={t:`Calendario esportato: ${ev.length} scadenze. Aprilo dal telefono per aggiungerle al calendario.`, cls:'ok'}; render();
+}
+
+/* Eventi della sezione */
+app.addEventListener('click', async e=>{
+  const t=e.target.closest('button'); if(!t || S.view!=='emergenza') return;
+  const trova=id=>S.emArticoli.find(a=>a.id===id);
+  if(t.id==='em-nuovo') return apriFormEm(null);
+  if(t.dataset.emMod) return apriFormEm(t.dataset.emMod);
+  if(t.dataset.emStato!==undefined){ S.emFiltroStato = S.emFiltroStato===t.dataset.emStato ? '' : t.dataset.emStato; S.emVista='elenco'; return render(); }
+  if(t.dataset.emCat!==undefined){ S.emFiltroCat=t.dataset.emCat; return render(); }
+  if(t.id==='em-togli-filtri'){ S.emFiltroStato=''; S.emFiltroCat=''; return render(); }
+  if(t.dataset.emVista){ S.emVista=t.dataset.emVista; return render(); }
+  if(t.dataset.emAnnulla){ S.emDel=null; S.emOk=null; return render(); }
+  if(t.dataset.emDel){ S.emDel=t.dataset.emDel; S.emOk=null; return render(); }
+  if(t.dataset.emDelSi){
+    const id=t.dataset.emDelSi, a=trova(id); S.emArticoli=S.emArticoli.filter(x=>x.id!==id); S.emDel=null; S.emMsg={t:`Eliminato: ${a?a.nome:''}.`, cls:'ok'}; LS.set('emergenza', S.emArticoli); render();
+    if(S.emCol){ try{ await S.emCol.doc(id).delete() }catch(err){ console.error(err) } }
+    return;
+  }
+  if(t.dataset.emOk){
+    const a=trova(t.dataset.emOk); if(!a) return;
+    if(a.scadenza){ S.emOk=a.id; S.emDel=null; return render(); }
+    S.emMsg={t:`${a.nome}: controllato oggi.`, cls:'ok'};
+    return salvaArticolo({...a, ultimo_controllo:iso(new Date()), presente:true});
+  }
+  if(t.dataset.emOkSalva){
+    const a=trova(t.dataset.emOkSalva); if(!a) return;
+    const nuovo={...a, ultimo_controllo:iso(new Date()), presente:true};
+    const m=$('#em-ok-mese') && $('#em-ok-mese').value;
+    if(!t.dataset.stessa && m){ nuovo.scadenza=fineMese(m); nuovo.scadenza_solo_mese=true; }
+    S.emOk=null; S.emMsg={t:`${a.nome}: controllato oggi${!t.dataset.stessa && m ? ', nuova scadenza '+m.split('-').reverse().join('/') : ''}.`, cls:'ok'};
+    return salvaArticolo(nuovo);
+  }
+  if(t.dataset.emSpesa){
+    const a=trova(t.dataset.emSpesa); if(!a) return;
+    await aggiungiExtra(a.nome, qtaEm(a), 'emergenza', a.id);
+    S.emMsg={t:`${a.nome} aggiunto alla Spesa, in "Da comprare in più".`, cls:'ok'}; return render();
+  }
+  if(t.id==='em-kit'){
+    if(S.emImporto || S.emArticoli.length) return;
+    S.emImporto=true; render();
+    const nuovi=articoliKitIniziale(), quando=new Date().toISOString(), chi=utenteQui();
+    S.emArticoli=nuovi.map(a=>({...a, aggiornato_da:chi, aggiornato_il:quando})); LS.set('emergenza', S.emArticoli);
+    let errori=0;
+    if(S.emCol) for(const a of S.emArticoli){ const {id,...d}=a; try{ await S.emCol.doc(id).set(d) }catch(err){ errori++; console.error(err) } }
+    S.emImporto=false;
+    S.emMsg = errori ? {t:`Caricati ${nuovi.length-errori} articoli su ${nuovi.length}: riprova più tardi per gli altri.`, cls:'err'} : {t:`Kit iniziale caricato: ${nuovi.length} articoli. Completa le scadenze con "Modifica".`, cls:'ok'};
+    return render();
+  }
+  if(t.id==='em-ics') return esportaIcs();
+  if(t.id==='em-ctl-reset' || t.id==='em-ctl-fine'){
+    if(t.id==='em-ctl-fine'){
+      const g=S.emArticoli.find(a=>/controllo generale/i.test(a.nome));
+      if(g) await salvaArticolo({...g, ultimo_controllo:iso(new Date())});
+      S.emMsg={t:'Controllo semestrale concluso. Il prossimo tra 6 mesi.', cls:'ok'};
+    }
+    S.emControllo={fatti:{}, inizio:null}; render();
+    if(S.emStatoRef){ try{ await S.emStatoRef.set(S.emControllo) }catch(err){ console.error(err) } }
+  }
+});
+app.addEventListener('change', async e=>{
+  const id=e.target.dataset && e.target.dataset.emCtl; if(!id) return;
+  const fatti={...((S.emControllo && S.emControllo.fatti)||{})};
+  if(e.target.checked){
+    fatti[id]=iso(new Date());
+    const a=S.emArticoli.find(x=>x.id===id);
+    if(a) salvaArticolo({...a, ultimo_controllo:iso(new Date())});
+  } else delete fatti[id];
+  S.emControllo={inizio:(S.emControllo&&S.emControllo.inizio)||iso(new Date()), fatti};
+  render();
+  if(S.emStatoRef){ try{ await S.emStatoRef.set(S.emControllo) }catch(err){ console.error(err) } }
+});
+$('#sheet').addEventListener('click', e=>{
+  const b=e.target.closest('[data-em-scad]'); if(!b) return;
+  const mese=b.dataset.emScad==='mese';
+  $('#sheet').querySelectorAll('[data-em-scad]').forEach(x=>x.setAttribute('aria-pressed', String(x===b)));
+  $('#em-scad-giorno').hidden=mese; $('#em-scad-mese').hidden=!mese;
+});
+$('#sheet').addEventListener('submit', async e=>{
+  if(e.target.id!=='form-em') return;
+  e.preventDefault();
+  const nome=$('#em-nome').value.replace(/\s+/g,' ').trim();
+  if(!nome){ $('#em-form-err').textContent='Scrivi il nome dell\'articolo.'; return; }
+  const soloMese=!$('#em-scad-mese').hidden, vMese=$('#em-scad-mese').value, vGiorno=$('#em-scad-giorno').value;
+  const scadenza = soloMese ? (vMese?fineMese(vMese):null) : (vGiorno||null);
+  const qta=$('#em-qta').value;
+  const idEsistente=e.target.dataset.id;
+  const vecchio=S.emArticoli.find(a=>a.id===idEsistente)||{};
+  const a={...vecchio, id: idEsistente || slug(nome).slice(0,60)+'-'+Date.now().toString(36), nome, contenitore:$('#em-cont').value, categoria:$('#em-cat').value,
+    quantita: qta===''?null:+qta, unita:$('#em-unita').value.trim(), scadenza, scadenza_solo_mese: !!(scadenza && soloMese),
+    ricorrenza_giorni:+$('#em-ric').value||0, ultimo_controllo:$('#em-ultimo').value||null, presente:$('#em-presente').checked, note:$('#em-note').value.trim()};
+  if(a.ricorrenza_giorni && !a.ultimo_controllo) a.ultimo_controllo=iso(new Date());
+  chiudi(); S.emMsg={t:`${idEsistente?'Modificato':'Aggiunto'}: ${nome}.`, cls:'ok'};
+  await salvaArticolo(a);
+});
+
+/* Notifiche: arrivano nel commit successivo */
+function vistaNotifiche(){ return '' }
+
 /* ---------- Codice di famiglia ---------- */
 function vistaCodice(){
   return `<section class="card ask" style="margin-top:12px">
@@ -1239,6 +1574,9 @@ async function collega(){
   const db = adattaDb(fb.fs, 'famiglie/'+S.codice);
   S.settCol=db.collection('settimane'); S.famRef=db.doc('impostazioni/famiglia');
   S.spunteCol=db.collection('spunte'); S.ricetteCol=db.collection('ricette'); S.pesiCol=db.collection('pesi');
+  S.emCol=db.collection('emergenza_articoli'); S.emStatoRef=db.doc('emergenza_stato/controllo');
+  S.emCol.onSnapshot(snap=>{ if(snap.metadata.fromCache && !snap.size && S.emCaricato) return; impostaEmergenza(snap.docs.map(d=>({id:d.id, ...d.data()}))); if(S.view==='emergenza' && !staScrivendo()) render(); }, e=>{ console.error(e); S.emCaricato=true; });
+  S.emStatoRef.onSnapshot(snap=>{ S.emControllo = snap.exists ? {fatti:{}, ...snap.data()} : {fatti:{}}; if(S.view==='emergenza' && !staScrivendo()) render(); }, ()=>{});
   S.pesiCol.onSnapshot(snap=>{ impostaPesi(snap.docs.map(d=>({id:d.id, ...d.data()}))); if(S.view==='peso' && !staScrivendo()) render(); }, e=>console.error(e));
   S.settCol.onSnapshot(snap=>{
     if(!snap.metadata.fromCache) clearTimeout(timer);
@@ -1262,6 +1600,7 @@ async function importaDatiIniziali(){
     if(d.famiglia) await S.famRef.set(d.famiglia);
     for(const [id,r] of Object.entries(d.ricette||{})) await S.ricetteCol.doc(id).set(r);
     for(const p of (Array.isArray(d.pesi)?d.pesi:[])) if(p && p.id && p.nome) await S.pesiCol.doc(p.id).set({nome:p.nome, misure:p.misure||{}});
+    for(const a of (Array.isArray(d.emergenza_articoli)?d.emergenza_articoli:[])) if(a && a.id && a.nome){ const {id,...x}=a; await S.emCol.doc(id).set(x); }
     S.importando=false;
   }catch(e){ console.error(e); S.importando=false; S.erroreAvvio='Importazione non riuscita: riprova tra poco.'; render(); }
 }
@@ -1285,13 +1624,13 @@ document.addEventListener('submit', e=>{
 app.addEventListener('click', async e=>{
   const t=e.target.closest('button'); if(!t) return;
   if(t.id==='scarica-backup'){
-    const dati={settimane:S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})), famiglia:{nome:S.nomeFamiglia||'', persone:S.persone, assenze:S.assenze}, ricette:{}, pesi:S.pesi.map(p=>({id:p.id, nome:p.nome, misure:p.misure}))};
+    const dati={settimane:S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})), famiglia:{nome:S.nomeFamiglia||'', persone:S.persone, assenze:S.assenze}, ricette:{}, pesi:S.pesi.map(p=>({id:p.id, nome:p.nome, misure:p.misure})), emergenza_articoli:S.emArticoli};
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(dati,null,1)],{type:'application/json'}));
     a.download='apparecchio-backup-'+iso(new Date())+'.json'; document.body.appendChild(a); a.click(); a.remove(); return;
   }
   if(t.id==='esci'){ S.esciConferma=true; return render(); }
   if(t.id==='esci-no'){ S.esciConferma=false; return render(); }
-  if(t.id==='esci-si'){ ['codice','settimane','famiglia','spunte','pesi','pesoSel'].forEach(k=>{ try{ localStorage.removeItem('apparecchio:'+k) }catch(_){} }); location.reload(); return; }
+  if(t.id==='esci-si'){ ['codice','settimane','famiglia','spunte','pesi','pesoSel','emergenza','extra'].forEach(k=>{ try{ localStorage.removeItem('apparecchio:'+k) }catch(_){} }); location.reload(); return; }
   if(t.id==='copia-codice'){ const st=$('#codice-stato'); try{ await navigator.clipboard.writeText(S.codice); st.textContent='Codice copiato.'; st.className='status ok'; }catch(_){ st.textContent='Tieni premuto sul codice per copiarlo.'; st.className='status'; } }
 });
 
@@ -1323,6 +1662,7 @@ function registraSw(){
   const ls=LS.get('settimane',null); if(Array.isArray(ls) && ls.length) impostaSettimane(ls);
   const fam=LS.get('famiglia',null); if(fam) impostaFamiglia(fam);
   S.pesi=LS.get('pesi',[]) || []; S.pesoSel=LS.get('pesoSel',null);
+  const em=LS.get('emergenza',null); if(Array.isArray(em)){ S.emArticoli=em; S.emCaricato=true; }
   render();
   setInterval(()=>{ if($('#sheet').hidden && (S.view==='oggi' || S.view==='settimana')) render() },60000);
   collega();
