@@ -209,6 +209,11 @@ input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(
 .notif-campi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .notif-campi label{display:flex;flex-direction:column;gap:4px;min-width:0}
 @media (max-width:480px){.notif-campi{grid-template-columns:1fr 1fr}.notif-campi label:first-child{grid-column:1/-1}}
+.em-viste{display:flex;flex-wrap:wrap}
+.em-sugg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:-4px}
+.em-sugg .chip{color:var(--ink)}
+.acq-dx{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.acq-qta{font-weight:700;white-space:nowrap}
 .em-stato{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .em-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px;min-width:0}
 .em-tile b{font-family:var(--font-display);font-size:24px;line-height:1}
@@ -666,7 +671,7 @@ function qtTesto(it){
   return parti.join(' ');
 }
 function vistaSpesa(){
-  if(!haDieta()) return vistaVuota();
+  if(!haDieta()) return vistaVuota() + (S.extraCol || S.extra.length ? vistaExtra() : '');
   const da = S.spesa.da ?? daDefault();
   if(!S.spesa.giorni){
     const {start,spostata}=inizioSpesa(da==='oggi');
@@ -1162,7 +1167,7 @@ app.addEventListener('keydown', e=>{
   if(e.target.id==='peso-nome'){ e.preventDefault(); $('#peso-crea').click(); }
 });
 
-const VERSIONE_APP='17 nov 2026 · kit di emergenza e notifiche';
+const VERSIONE_APP='17 nov 2026 · lista acquisti del kit e suggerimenti';
 /* ---------- Spesa: voci in più (libere o dal kit di emergenza) ---------- */
 function vistaExtra(){
   const voci=[...S.extra].sort((a,b)=>(a.creato_il||'').localeCompare(b.creato_il||''));
@@ -1254,8 +1259,9 @@ function vistaEmergenza(){
   html += `<div class="em-stato num" role="group" aria-label="Filtra per stato">
     ${[['scaduto','Scaduti'],['in_scadenza','Entro 30 giorni'],['da_comprare','Da comprare']].map(([k,l])=>`<button class="em-tile ${k}" data-em-stato="${k}" aria-pressed="${fs===k}"><b>${conta(k)}</b><span>${l}</span></button>`).join('')}
   </div>
-  <div class="seg" role="group" aria-label="Vista" style="margin:0"><button data-em-vista="elenco" aria-pressed="${S.emVista!=='controllo'}">Elenco</button><button data-em-vista="controllo" aria-pressed="${S.emVista==='controllo'}">Controllo semestrale</button></div>`;
+  <div class="seg em-viste" role="group" aria-label="Vista" style="margin:0"><button data-em-vista="elenco" aria-pressed="${!['acquisti','controllo'].includes(S.emVista)}">Elenco</button><button data-em-vista="acquisti" aria-pressed="${S.emVista==='acquisti'}">Acquisti</button><button data-em-vista="controllo" aria-pressed="${S.emVista==='controllo'}">Controllo semestrale</button></div>`;
   if(S.emVista==='controllo') return html + vistaControllo(art, stati) + vistaNotifiche();
+  if(S.emVista==='acquisti') return html + vistaAcquisti(art) + vistaNotifiche();
   const catPresenti=CATEGORIE_EM.filter(([k])=>art.some(a=>a.categoria===k));
   html += `<div class="chips" role="group" aria-label="Filtra per categoria"><button class="chip" data-em-cat="" aria-pressed="${!fc}">Tutte</button>${catPresenti.map(([k,l])=>`<button class="chip" data-em-cat="${k}" aria-pressed="${fc===k}">${l}</button>`).join('')}</div>`;
   if(fs||fc) html += `<p class="muted" style="margin:0;font-size:13px">Filtro attivo: ${[fs&&({scaduto:'scaduti',in_scadenza:'entro 30 giorni',da_comprare:'da comprare'})[fs], fc&&nomeCat(fc).toLowerCase()].filter(Boolean).join(' · ')} <button class="btn ghost" id="em-togli-filtri">Togli i filtri</button></p>`;
@@ -1310,7 +1316,9 @@ function apriFormEm(id){
   const soloMese=!!a.scadenza_solo_mese;
   $('#sheet-body').innerHTML=`<div class="label">Kit di emergenza</div><h2 id="sheet-title" style="margin:6px 0 12px">${id?'Modifica articolo':'Nuovo articolo'}</h2>
   <form id="form-em" class="em-form" data-id="${id||''}">
-    <label class="largo"><span class="label">Nome</span><input id="em-nome" class="campo" required maxlength="80" value="${esc(a.nome)}" placeholder="es. Pile AA"></label>
+    <label class="largo"><span class="label">Nome</span><input id="em-nome" class="campo" required maxlength="80" value="${esc(a.nome)}" placeholder="es. Pile AA" autocomplete="off" autocorrect="off" spellcheck="false"></label>
+    <div id="em-sugg" class="em-sugg largo" role="group" aria-label="Prodotti già nel kit" hidden></div>
+    <p id="em-doppione" class="notice warn largo" style="margin:0" hidden></p>
     <label><span class="label">Contenitore</span><select id="em-cont" class="campo">${CONTENITORI.map(([k,l])=>`<option value="${k}" ${a.contenitore===k?'selected':''}>${l}</option>`).join('')}</select></label>
     <label><span class="label">Categoria</span><select id="em-cat" class="campo">${CATEGORIE_EM.map(([k,l])=>`<option value="${k}" ${a.categoria===k?'selected':''}>${l}</option>`).join('')}</select></label>
     <label><span class="label">Quantità</span><input id="em-qta" class="campo num" type="number" min="0" step="any" inputmode="decimal" value="${a.quantita!=null?a.quantita:''}"></label>
@@ -1505,6 +1513,113 @@ $('#sheet').addEventListener('submit', async e=>{
   if(a.ricorrenza_giorni && !a.ultimo_controllo) a.ultimo_controllo=iso(new Date());
   chiudi(); S.emMsg={t:`${idEsistente?'Modificato':'Aggiunto'}: ${nome}.`, cls:'ok'};
   await salvaArticolo(a);
+});
+
+/* Lista acquisti del kit: tutto ciò che va comprato o sostituito, sommato per prodotto, senza contenitori */
+function chiaveProdotto(nome){ return norm(nome).replace(/\s+/g,' ').trim() }
+function righeAcquisti(art){
+  const gruppi=new Map();
+  for(const a of art){
+    const st=statoEm(a);
+    const daComprare = st.stato==='da_comprare';
+    const daSostituire = (st.stato==='scaduto' || st.stato==='in_scadenza') && st.tipo==='scadenza';
+    if(!daComprare && !daSostituire) continue;
+    const k=chiaveProdotto(a.nome);
+    const g=gruppi.get(k) || {chiave:k, nome:a.nome, quantita:{}, senzaQta:0, contenitori:[], ids:[], peggiore:null, giorni:null};
+    if(a.quantita!=null && a.quantita!=='' && +a.quantita>0){ const u=a.unita||'pz'; g.quantita[u]=(g.quantita[u]||0)+(+a.quantita); } else g.senzaQta++;
+    g.contenitori.push(nomeCont(a.contenitore)); g.ids.push(a.id);
+    const r={scaduto:0, da_comprare:1, in_scadenza:2}[st.stato];
+    if(g.peggiore==null || r<{scaduto:0, da_comprare:1, in_scadenza:2}[g.peggiore]){ g.peggiore=st.stato; g.giorni=st.giorni; }
+    else if(st.stato==='in_scadenza' && g.peggiore==='in_scadenza' && st.giorni<g.giorni) g.giorni=st.giorni;
+    gruppi.set(k, g);
+  }
+  const ordine={scaduto:0, da_comprare:1, in_scadenza:2};
+  return [...gruppi.values()].sort((a,b)=>(ordine[a.peggiore]-ordine[b.peggiore]) || a.nome.localeCompare(b.nome,'it'));
+}
+function qtaGruppo(g){ const p=Object.entries(g.quantita).map(([u,q])=>`${fmtN(q)} ${u}`.trim()); return p.join(' + ') }
+function motivoGruppo(g){
+  if(g.peggiore==='scaduto') return '<span class="em-badge scaduto">scaduto</span>';
+  if(g.peggiore==='da_comprare') return '<span class="em-badge da_comprare">da comprare</span>';
+  return `<span class="em-badge in_scadenza">${g.giorni===0?'scade oggi':'scade tra '+g.giorni+' gg'}</span>`;
+}
+function giaInSpesa(g){ return S.extra.some(x=>!x.preso && (g.ids.includes(x.articolo_id) || chiaveProdotto(x.nome)===g.chiave)) }
+function vistaAcquisti(art){
+  const righe=righeAcquisti(art);
+  let html=`<section class="card settimana-box"><h3 style="font-size:18px">Lista acquisti del kit</h3>
+    <p class="muted" style="margin:0;font-size:13px">Tutto quello che va comprato o sostituito (scaduto o in scadenza entro 30 giorni), sommato per prodotto, senza dividere tra zaini e scorta. I controlli periodici non ci sono: vanno controllati, non comprati.</p></section>`;
+  if(!righe.length) return html+'<p class="notice">Niente da comprare: il kit è completo e nessun articolo scade nei prossimi 30 giorni.</p>';
+  html+=`<section class="card cat">${righe.map(g=>{
+    const dove=[...new Set(g.contenitori)];
+    const conteggio = g.contenitori.length>1 ? ` (${g.contenitori.length} articoli)` : '';
+    return `<div class="em-riga acq-riga"><div class="em-info"><b>${esc(g.nome)}</b><small>${esc(dove.join(' · ')+conteggio)}</small></div>
+      <div class="acq-dx"><span class="num acq-qta">${esc(qtaGruppo(g))}</span>${motivoGruppo(g)}</div>
+      <div class="em-azioni">${giaInSpesa(g)?'<span class="muted" style="font-size:12.5px;margin-left:6px">già nella spesa</span>':`<button class="btn ghost" data-acq-spesa="${esc(g.chiave)}">+ Spesa</button>`}</div></div>`; }).join('')}</section>
+  <div class="row" style="justify-content:space-between"><button class="btn primary" id="acq-tutto">Aggiungi tutto alla Spesa</button><button class="btn" id="acq-copia">Copia la lista</button></div>
+  <p class="status" id="acq-stato" aria-live="polite"></p>`;
+  return html;
+}
+async function mandaInSpesa(g){ if(giaInSpesa(g)) return false; await aggiungiExtra(g.nome, qtaGruppo(g), 'emergenza', g.ids[0]); return true; }
+app.addEventListener('click', async e=>{
+  const t=e.target.closest('button'); if(!t || S.view!=='emergenza') return;
+  if(t.dataset.acqSpesa){
+    const g=righeAcquisti(S.emArticoli).find(x=>x.chiave===t.dataset.acqSpesa); if(!g) return;
+    await mandaInSpesa(g); S.emMsg={t:`${g.nome} aggiunto alla Spesa, in "Da comprare in più".`, cls:'ok'}; return render();
+  }
+  if(t.id==='acq-tutto'){
+    let n=0; for(const g of righeAcquisti(S.emArticoli)) if(await mandaInSpesa(g)) n++;
+    S.emMsg={t: n ? `Aggiunti ${n} prodotti alla Spesa, in "Da comprare in più".` : 'Era già tutto nella Spesa.', cls:'ok'}; return render();
+  }
+  if(t.id==='acq-copia'){
+    const testo='Kit di emergenza · da comprare\n\n'+righeAcquisti(S.emArticoli).map(g=>`- ${g.nome}${qtaGruppo(g)?': '+qtaGruppo(g):''}`).join('\n');
+    const st=$('#acq-stato');
+    try{ await navigator.clipboard.writeText(testo); st.textContent='Lista copiata: incollala dove vuoi.'; st.className='status ok'; }
+    catch(err){ st.className='status'; st.innerHTML='Copia non disponibile qui: seleziona il testo qui sotto.<textarea style="min-height:140px;margin-top:8px" readonly>'+esc(testo)+'</textarea>'; st.querySelector('textarea').select(); }
+  }
+});
+
+/* Suggerimenti mentre si scrive il nome: stessi prodotti scritti allo stesso modo */
+function distanza(a,b){ if(Math.abs(a.length-b.length)>2) return 3; const d=Array.from({length:a.length+1},(_,i)=>[i]); for(let j=1;j<=b.length;j++) d[0][j]=j;
+  for(let i=1;i<=a.length;i++) for(let j=1;j<=b.length;j++) d[i][j]=Math.min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+(a[i-1]===b[j-1]?0:1)); return d[a.length][b.length] }
+function suggerimentiNome(testo){
+  const q=chiaveProdotto(testo); if(q.length<2) return [];
+  const parole=q.split(' ').filter(Boolean);
+  const visti=new Map();
+  for(const a of S.emArticoli){ const k=chiaveProdotto(a.nome); if(!visti.has(k)) visti.set(k, a); }
+  const out=[];
+  for(const [k,a] of visti){
+    if(k===q) continue;
+    const pk=k.split(/[^a-z0-9]+/).filter(Boolean);
+    const ognuna=parole.every(p=>pk.some(w=>w.startsWith(p) || (p.length>=4 && w[0]===p[0] && [p.length-1, p.length, p.length+1].some(n=>distanza(p, w.slice(0, n))<=1))));
+    const punteggio = k.startsWith(q) ? 0 : k.includes(q) ? 1 : ognuna ? 2 : 9;
+    if(punteggio<9) out.push({a, punteggio});
+  }
+  return out.sort((x,y)=>x.punteggio-y.punteggio || x.a.nome.localeCompare(y.a.nome,'it')).slice(0,6).map(x=>x.a);
+}
+function aggiornaSuggerimenti(){
+  const input=$('#em-nome'), box=$('#em-sugg'), avviso=$('#em-doppione'); if(!input || !box) return;
+  const idForm=$('#form-em').dataset.id;
+  const lista=suggerimentiNome(input.value);
+  box.innerHTML = lista.length ? `<span class="label">Già nel kit</span>${lista.map(a=>`<button type="button" class="chip" data-em-sugg="${esc(a.id)}">${esc(a.nome)}</button>`).join('')}` : '';
+  box.hidden=!lista.length;
+  const k=chiaveProdotto(input.value), cont=$('#em-cont').value;
+  const doppio = k && S.emArticoli.find(a=>a.id!==idForm && chiaveProdotto(a.nome)===k && a.contenitore===cont);
+  avviso.innerHTML = doppio ? `"${esc(doppio.nome)}" c'è già in ${esc(nomeCont(cont))}. <button type="button" class="btn ghost" data-em-apri="${esc(doppio.id)}">Apri quello</button>` : '';
+  avviso.hidden=!doppio;
+}
+$('#sheet').addEventListener('input', e=>{ if(e.target.id==='em-nome') aggiornaSuggerimenti(); });
+$('#sheet').addEventListener('change', e=>{ if(e.target.id==='em-cont') aggiornaSuggerimenti(); });
+$('#sheet').addEventListener('click', e=>{
+  const b=e.target.closest('[data-em-sugg],[data-em-apri]'); if(!b) return;
+  if(b.dataset.emApri) return apriFormEm(b.dataset.emApri);
+  const a=S.emArticoli.find(x=>x.id===b.dataset.emSugg); if(!a) return;
+  $('#em-nome').value=a.nome;
+  if(!$('#form-em').dataset.id){   // articolo nuovo: copia anche categoria, unità e controllo periodico
+    $('#em-cat').value=a.categoria; $('#em-unita').value=a.unita||'';
+    const ric=$('#em-ric'); if([...ric.options].some(o=>+o.value===(a.ricorrenza_giorni||0))) ric.value=String(a.ricorrenza_giorni||0);
+    const nota=$('#em-note');   // una nota copiata in automatico si può sostituire; una scritta a mano no
+    if(!nota.value || nota.value===nota.dataset.auto){ nota.value=a.note||''; nota.dataset.auto=a.note||''; }
+  }
+  aggiornaSuggerimenti(); $('#em-qta').focus();
 });
 
 /* ---------- Notifiche push del kit di emergenza ---------- */
