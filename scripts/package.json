@@ -1,0 +1,14 @@
+{
+  "name": "apparecchio-notifiche",
+  "private": true,
+  "type": "module",
+  "description": "Notifiche push del kit di emergenza, inviate ogni giorno da GitHub Actions",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "notifiche": "node notifiche-emergenza.mjs",
+    "test": "node --test test/scadenze.test.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "14.5.0"
+  }
+}

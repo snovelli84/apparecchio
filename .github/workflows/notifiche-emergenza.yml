@@ -1,0 +1,61 @@
+name: notifiche-emergenza
+
+on:
+  schedule:
+    - cron: '0 17 * * *'   # ogni giorno alle 17:00 UTC (18:00 in Italia, 19:00 con l'ora legale)
+  workflow_dispatch:
+    inputs:
+      prova:
+        description: 'Invia comunque una notifica di prova a tutti i telefoni registrati'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: write   # solo per la riattivazione mensile del workflow (vedi l'ultimo passaggio)
+
+concurrency:
+  group: notifiche-emergenza
+  cancel-in-progress: false
+
+jobs:
+  invia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: scripts/package-lock.json
+
+      - name: Installa le dipendenze dello script
+        working-directory: scripts
+        run: npm ci --no-audit --no-fund
+
+      - name: Verifica il calcolo delle scadenze
+        working-directory: scripts
+        run: npm test
+
+      - name: Invia le notifiche
+        working-directory: scripts
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          PROVA: ${{ github.event_name == 'workflow_dispatch' && inputs.prova && '1' || '' }}
+        run: node notifiche-emergenza.mjs
+
+      # Nei repository pubblici GitHub sospende i workflow programmati dopo 60 giorni senza commit.
+      # Una volta al mese, mentre il workflow è ancora attivo, lo riattiviamo: il conteggio riparte.
+      - name: Mantieni attivo il workflow (il 1° di ogni mese)
+        if: always() && github.event_name == 'schedule'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$(date -u +%d)" = "01" ]; then
+            gh api -X PUT "repos/${{ github.repository }}/actions/workflows/notifiche-emergenza.yml/enable"
+            echo "Workflow riattivato: il conteggio dei 60 giorni riparte da oggi."
+          else
+            echo "Non è il primo del mese: niente da fare."
+          fi
