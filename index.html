@@ -209,6 +209,12 @@ input[type="date"]{font:inherit;font-weight:600;color:var(--ink);background:var(
 .notif-campi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .notif-campi label{display:flex;flex-direction:column;gap:4px;min-width:0}
 @media (max-width:480px){.notif-campi{grid-template-columns:1fr 1fr}.notif-campi label:first-child{grid-column:1/-1}}
+.mod-box{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.mod-azioni{gap:2px 4px;margin-left:-6px}.mod-azioni .label{margin-left:6px}.mod-azioni .btn.ghost{padding:6px 8px}
+.mod-pannello{display:flex;flex-direction:column;gap:8px}
+.mod-scelta{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 12px}
+.mod-scelta b{font-weight:600}.mod-scelta span{font-size:13px;color:var(--muted)}
+.mod-attiva{text-align:left}
 .em-viste{display:flex;flex-wrap:wrap}
 .em-sugg{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:-4px}
 .em-sugg .chip{color:var(--ink)}
@@ -439,7 +445,7 @@ function nGiorni(r){ return Object.keys(r.settimana).length + Object.keys(r.data
 const LS = { get(k,d){ try{ const v=localStorage.getItem('apparecchio:'+k); return v==null?d:JSON.parse(v) }catch(e){ return d } },
              set(k,v){ try{ localStorage.setItem('apparecchio:'+k, JSON.stringify(v)) }catch(e){} } };
 const S = {
-  view:'oggi', settimane:[], pesi:[], pesoSel:null, emArticoli:[], emCaricato:false, emControllo:{fatti:{}}, extra:[], datati:{}, assenze:[], persone:3,
+  view:'oggi', modifiche:{}, settimane:[], pesi:[], pesoSel:null, emArticoli:[], emCaricato:false, emControllo:{fatti:{}}, extra:[], datati:{}, assenze:[], persone:3,
   stato:'loading', settCol:null, famRef:null, spunteCol:null, ricetteCol:null, sample:null,
   giornoSel:null, filtroTipo:null, settSel:null,
   edit:null, // {id, inizio, testo, nuova, conferma}
@@ -463,7 +469,7 @@ function settimanaTesto(inizio){
 function haDieta(){ return S.settimane.length>0 }
 /* La settimana valida per un giorno: l'ultima iniziata entro quel giorno */
 function settimanaPer(d){ let w=null; for(const x of S.settimane) if(diffG(d,daIso(x.inizio))>=0) w=x; return w }
-function giornoData(d){
+function giornoBase(d){
   const x=S.datati[iso(d)], w=settimanaPer(d);
   const base = w ? (w.r.settimana[d.getDay()]||null) : null;
   if(!x) return base;
@@ -487,8 +493,8 @@ function giorniOggi(now){
   return out;
 }
 function regola(d,p){ return S.assenze.find(r=>r.dow===d.getDay() && r.tipo===p.tipo) }
-function personePer(d,p){ const r=regola(d,p); return r ? Math.max(0, S.persone-(r.fuori||1)) : S.persone }
-function aTavola(d,p){ const r=regola(d,p), n=personePer(d,p); return `${n} ${n===1?'persona':'persone'}${r&&r.nota?' · '+esc(r.nota):''}` }
+function personePer(d,p){ const m=modPer(d,p.tipo); if(m && m.persone!=null) return m.persone; const r=regola(d,p); return r ? Math.max(0, S.persone-(r.fuori||1)) : S.persone }
+function aTavola(d,p){ const m=modPer(d,p.tipo), r=regola(d,p), n=personePer(d,p); return `${n} ${n===1?'persona':'persone'}${m&&m.persone!=null?' · solo per questo pasto':r&&r.nota?' · '+esc(r.nota):''}` }
 function pastoData(d,tipo){ const g=giornoData(d); return g ? g.pasti.find(p=>p.tipo===tipo) : null }
 function avviso(now){
   if(!S.settimane.length) return '';
@@ -502,8 +508,8 @@ function avviso(now){
 }
 function focusAdesso(now){
   const m=minuti(now);
-  for(const t of PRINCIPALI){ if(m < TIPI[t].fine && pastoData(now,t)) return {data:now, tipo:t, oggi:true}; }
-  for(let i=1;i<=14;i++){ const d=addDays(now,i), g=giornoData(d); if(g && g.pasti.length){ const p=g.pasti.find(x=>PRINCIPALI.includes(x.tipo))||g.pasti[0]; return {data:d, tipo:p.tipo, oggi:false, domani:i===1}; } }
+  for(const t of PRINCIPALI){ const q=pastoData(now,t); if(m < TIPI[t].fine && q && !q.fuori) return {data:now, tipo:t, oggi:true}; }
+  for(let i=1;i<=14;i++){ const d=addDays(now,i), g=giornoData(d); const ok=g && g.pasti.filter(x=>!x.fuori); if(ok && ok.length){ const p=ok.find(x=>PRINCIPALI.includes(x.tipo))||ok[0]; return {data:d, tipo:p.tipo, oggi:false, domani:i===1}; } }
   return null;
 }
 /* ---------- Formattazione ---------- */
@@ -567,7 +573,7 @@ function vistaOggi(){
     const p=pastoData(f.data,f.tipo);
     const quando = f.oggi ? 'Oggi' : f.domani ? 'Domani' : `${GIORNI[f.data.getDay()]} ${f.data.getDate()}`;
     html += `<section class="focus" aria-label="Da preparare adesso">
-      <div class="eyebrow">Da preparare · ${quando} · ${p.label}</div>
+      <div class="eyebrow">Da preparare · ${quando} · ${p.label}${p.modificato?' · modificato':''}</div>
       <h2>${esc(titoloPasto(p))}</h2>
       <div class="meta num"><span>ore ${p.ora}</span>${p.kcal?`<span>≈ ${p.kcal} kcal a persona</span>`:''}<span>${aTavola(f.data,p)}</span>${p.speciale?'<span>solo per questo giorno</span>':''}</div>
       ${libero(p) ? `<div class="ing" style="padding:12px 14px">${noteHtml(p)||'<span class="muted">Nessun ingrediente da preparare.</span>'}</div>`
@@ -585,7 +591,7 @@ function vistaOggi(){
       const adesso = f && f.oggi && iso(f.data)===selIso && f.tipo===p.tipo;
       return `<button class="${passato?'passato':''} ${adesso?'adesso':''}" data-open="${selIso}:${p.tipo}">
         <span class="ora num ${adesso?'ora-now':''}">${p.ora}</span>
-        <span class="tit"><small>${p.label}${adesso?' · adesso':''}${regola(selD,p)?' · '+personePer(selD,p)+' a tavola':''}</small><span>${esc(titoloPasto(p))}</span></span>
+        <span class="tit"><small>${p.label}${adesso?' · adesso':''}${p.fuori?' · fuori casa':p.modificato?' · modificato':''}${tavolaDiversa(selD,p)?' · '+personePer(selD,p)+' a tavola':''}</small><span>${esc(titoloPasto(p))}</span></span>
         ${p.kcal?`<span class="kcal num">${p.kcal}</span>`:'<span></span>'}</button>`; }).join('')}</div></div>`;
   }
   return html;
@@ -616,11 +622,11 @@ function vistaSettimana(){
     const di=iso(d), isOggi=di===oggiIso;
     html += `<article class="card day"><div class="day-h"><h3>${GIORNI[d.getDay()]} <span class="num muted" style="font-weight:500">${d.getDate()}</span>${isOggi?'<span class="oggi">oggi</span>':''}</h3><span class="muted num" style="font-size:13px">${totaleKcal(g)?'≈ '+totaleKcal(g)+' kcal':''}</span></div>`;
     if(tipo==='tutti'){
-      html += g.pasti.map(p=>`<button class="mini" data-open="${di}:${p.tipo}"><span class="t">${p.label}</span><span class="n">${esc(titoloPasto(p))}${regola(d,p)?` <span class="muted" style="font-size:12px">· ${personePer(d,p)} a tavola</span>`:''}</span><span class="k num">${p.kcal||''}</span></button>`).join('');
+      html += g.pasti.map(p=>`<button class="mini" data-open="${di}:${p.tipo}"><span class="t">${p.label}</span><span class="n">${esc(titoloPasto(p))}${p.fuori?` <span class="muted" style="font-size:12px">· fuori casa</span>`:p.modificato?` <span class="muted" style="font-size:12px">· modificato</span>`:''}${tavolaDiversa(d,p)?` <span class="muted" style="font-size:12px">· ${personePer(d,p)} a tavola</span>`:''}</span><span class="k num">${p.kcal||''}</span></button>`).join('');
     } else {
       const p=g.pasti.find(x=>x.tipo===tipo);
       if(!p) html += '<p class="muted" style="margin:0">Nessun pasto di questo tipo.</p>';
-      else html += `<div class="row" style="justify-content:space-between;margin-bottom:4px"><strong>${esc(titoloPasto(p))}</strong>${p.kcal?`<span class="kcal num">≈ ${p.kcal} kcal</span>`:''}</div>${regola(d,p)?`<p class="muted" style="margin:0 0 2px;font-size:13px">A tavola: ${aTavola(d,p)}</p>`:''}${tabellaVoci(p,personePer(d,p))}${noteHtml(p)}
+      else html += `<div class="row" style="justify-content:space-between;margin-bottom:4px"><strong>${esc(titoloPasto(p))}</strong>${p.kcal?`<span class="kcal num">≈ ${p.kcal} kcal</span>`:''}</div>${p.modificato?`<p class="muted" style="margin:0 0 2px;font-size:13px">Modificato: ${esc(p.descrMod)}</p>`:''}${tavolaDiversa(d,p)?`<p class="muted" style="margin:0 0 2px;font-size:13px">A tavola: ${aTavola(d,p)}</p>`:''}${tabellaVoci(p,personePer(d,p))}${noteHtml(p)}
         ${!libero(p) && S.sample ? `<button class="btn ghost" data-ricetta="${di}:${p.tipo}" style="margin-top:6px">${ICONA_RICETTA} Ricetta proposta</button>`:''}`;
     }
     html += '</article>';
@@ -652,7 +658,7 @@ function categoria(nome){ const n=norm(nome); for(const [c,keys] of CATEGORIE) i
 function listaSpesa(daOggi,n){
   const mappa={};
   for(const {data,dow,p} of pastiNelPeriodo(daOggi,n)){
-    const N=personePer(data,p); if(!N) continue;
+    const N=personePer(data,p); if(!N || p.fuori) continue;
     for(const v of p.voci){
       const key=chiaveSpesa(v.nome);
       const it = mappa[key] || (mappa[key]={key, nome:cap(key), qt:{}, qb:0, usi:[]});
@@ -690,7 +696,7 @@ function vistaSpesa(){
   const tot=lista.reduce((s,[,a])=>s+a.length,0), fatti=lista.reduce((s,[,a])=>s+a.filter(i=>S.spunte[i.key]).length,0);
   let html = `<section class="card range"><div><div class="label">Spesa per ${n} ${n===1?'giorno':'giorni'} · ${S.persone} persone</div><strong class="num">${desc}</strong>
     <div class="muted num" style="font-size:13px">${pasti.length} pasti · ${fatti}/${tot} presi${S.spunteCol?' · spunte condivise in famiglia':''}</div>
-    ${(()=>{ const r=pasti.filter(x=>regola(x.data,x.p)); return r.length?`<div class="muted num" style="font-size:13px">Con meno persone: ${r.map(x=>GIORNI_BREVI[x.dow]+' '+x.p.label.toLowerCase()+' ('+personePer(x.data,x.p)+')').join(', ')}</div>`:'' })()}</div>
+    ${(()=>{ const r=pasti.filter(x=>tavolaDiversa(x.data,x.p)); return r.length?`<div class="muted num" style="font-size:13px">Con meno persone: ${r.map(x=>GIORNI_BREVI[x.dow]+' '+x.p.label.toLowerCase()+' ('+personePer(x.data,x.p)+')').join(', ')}</div>`:'' })()}</div>
     <div class="row"><button class="btn" id="cambia-giorni">Cambia giorni</button></div></section>`;
   if(S.spunteErr) html += `<p class="notice warn">${esc(S.spunteErr)}</p>`;
   if(!lista.length) return html + '<p class="notice">In questo periodo non ci sono ingredienti da comprare.</p>' + vistaExtra();
@@ -849,12 +855,15 @@ function vai(v){ if(!VIEWS.includes(v)) v='oggi'; if(v==='spesa' && S.view!=='sp
 let ricettaCtl=null, ricettaAperta=null;
 function apriPasto(di,tipo,conRicetta){
   const d=daIso(di), p=pastoData(d,tipo); if(!p) return;
+  if(S.modPannello && S.modPannello.id!==modId(di,tipo)) S.modPannello=null;
   ricettaAperta={di,tipo};
   $('#sheet-body').innerHTML = `<div class="label">${GIORNI[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]} · ${p.label} · ore ${p.ora}</div>
     <div class="row" style="justify-content:space-between;margin:6px 0 10px"><h2 id="sheet-title">${esc(titoloPasto(p))}</h2>${p.kcal?`<span class="kcal num">≈ ${p.kcal} kcal a persona</span>`:''}</div>
-    ${regola(d,p)||p.speciale?`<p class="muted" style="margin:0 0 6px;font-size:13px">A tavola: ${aTavola(d,p)}${p.speciale?' · pasto valido solo per questo giorno':''}</p>`:''}
+    ${tavolaDiversa(d,p)||p.speciale?`<p class="muted" style="margin:0 0 6px;font-size:13px">A tavola: ${aTavola(d,p)}${p.speciale?' · pasto valido solo per questo giorno':''}</p>`:''}
+    ${p.fuori?`<p class="notice warn" style="margin:0 0 8px">Fuori casa${p.notaFuori?': '+esc(p.notaFuori):''}. Non serve preparare niente e il pasto non entra nella spesa.</p>`:''}
     ${tabellaVoci(p,personePer(d,p))}${noteHtml(p)}
-    ${libero(p)||!(S.sample||S.ricetteCol)?'':`<div class="ricetta" id="ricetta">
+    ${sezioneModifica(d,p)}
+    ${libero(p)||p.fuori||!(S.sample||S.ricetteCol)?'':`<div class="ricetta" id="ricetta">
       <div class="ricetta-scelta"><span class="label">Ricetta proposta</span>
         <div class="row">${['calda','fredda'].map(v=>`<button class="btn scelta-${v}" data-ricetta="${di}:${tipo}:${v}" aria-pressed="false">${v==='calda'?ICONA_CALDA:ICONA_FREDDA} ${v==='calda'?'Calda':'Fredda'}</button>`).join('')}</div>
         <p class="muted" id="ricetta-aiuto" style="margin:0;font-size:13px">Scegli se la vuoi cotta e servita calda, oppure fredda: insalata, piatto da preparare prima o da portare via.</p></div>
@@ -1167,7 +1176,179 @@ app.addEventListener('keydown', e=>{
   if(e.target.id==='peso-nome'){ e.preventDefault(); $('#peso-crea').click(); }
 });
 
-const VERSIONE_APP='17 nov 2026 · filtri nella lista acquisti';
+const VERSIONE_APP='20 nov 2026 · cambi della settimana';
+/* ---------- Cambi della settimana: valgono solo per una data, la dieta non si tocca ---------- */
+const modId=(di,tipo)=>di+'_'+tipo;
+function modPer(d,tipo){ return S.modifiche[modId(iso(d),tipo)] || null }
+function giornoData(d){
+  const base=giornoBase(d), di=iso(d);
+  if(!base) return base;
+  if(!Object.keys(S.modifiche).some(k=>k.startsWith(di+'_'))) return base;
+  return {...base, pasti: base.pasti.map(p=>{
+    const m=S.modifiche[modId(di,p.tipo)];
+    if(!m) return p;
+    let q={...p, modificato:true, originale:p};
+    if(m.pasto) q={...q, titolo:m.pasto.titolo||'', voci:Array.isArray(m.pasto.voci)?m.pasto.voci:[], kcal:m.pasto.kcal??null, note:Array.isArray(m.pasto.note)?m.pasto.note:[]};
+    if(m.fuori){ q.fuori=true; q.notaFuori=m.nota||''; }
+    q.descrMod=descrizioneModifica(m);
+    return q;
+  })};
+}
+function descrizioneModifica(m){
+  const parti=[];
+  if(m.fuori) parti.push('fuori casa'+(m.nota?': '+m.nota:''));
+  else if(m.scambio) parti.push('scambiato con '+m.scambio);
+  else if(m.pasto) parti.push('piatto sostituito'+(m.origine?' ('+m.origine+')':''));
+  if(m.persone!=null) parti.push(`${m.persone} a tavola`);
+  return parti.join(' · ');
+}
+function tavolaDiversa(d,p){ const m=modPer(d,p.tipo); return !!regola(d,p) || (m && m.persone!=null) }
+function nomePasto(d,p){ return `${GIORNI_BREVI[d.getDay()]} ${d.getDate()} · ${p.label.toLowerCase()}` }
+function contenutoPasto(p){ return {titolo:p.titolo||'', voci:(p.voci||[]).map(v=>({nome:v.nome, qta:v.qta??null, unita:v.unita??null})), kcal:p.kcal??null, note:(p.note||[]).map(n=>n.h?{h:n.h, items:[...n.items]}:{t:n.t})} }
+
+async function salvaModifica(id, dati){
+  dati={...dati, data:id.split('_')[0], tipo:id.split('_')[1], aggiornato_il:new Date().toISOString()};
+  S.modifiche={...S.modifiche, [id]:dati}; LS.set('modifiche', S.modifiche);
+  if(S.modCol){ try{ await S.modCol.doc(id).set(dati) }catch(e){ console.error(e) } }
+}
+async function togliModifiche(ids){
+  const nuovo={...S.modifiche}; ids.forEach(id=>delete nuovo[id]); S.modifiche=nuovo; LS.set('modifiche', S.modifiche);
+  if(S.modCol) for(const id of ids){ try{ await S.modCol.doc(id).delete() }catch(e){ console.error(e) } }
+}
+
+/* Sezione nella scheda del pasto */
+function sezioneModifica(d,p){
+  const di=iso(d), m=modPer(d,p.tipo), pannello=S.modPannello && S.modPannello.id===modId(di,p.tipo) ? S.modPannello.tipo : null;
+  let html=`<div class="mod-box" id="mod-box">`;
+  if(m) html+=`<div class="notice mod-attiva"><b>Modificato per questa data:</b> ${esc(descrizioneModifica(m))}<div style="margin-top:6px"><button class="btn" data-mod-ripristina="${di}:${p.tipo}">Ripristina il pasto originale</button></div>${p.originale && (m.pasto||m.fuori)?`<p class="muted" style="margin:6px 0 0;font-size:12.5px">Nella dieta: ${esc(titoloPasto(p.originale))}</p>`:''}</div>`;
+  if(!pannello){
+    html+=`<div class="row mod-azioni"><span class="label" style="width:100%">Cambia questo pasto</span>
+      ${!m||!(m.scambio||m.pasto||m.fuori)?`<button class="btn ghost" data-mod-apri="scambia">⇄ Scambia con un altro giorno</button>`:''}
+      <button class="btn ghost" data-mod-apri="sostituisci">✎ Sostituisci</button>
+      ${!m||!m.fuori?`<button class="btn ghost" data-mod-apri="fuori">Mangiamo fuori</button>`:''}
+      <button class="btn ghost" data-mod-apri="persone">Persone a tavola</button></div>`;
+    return html+'</div>';
+  }
+  html+=`<div class="mod-pannello">`;
+  if(pannello==='scambia'){
+    const cand=candidatiScambio(d,p);
+    html+=`<span class="label">Scambia ${esc(nomePasto(d,p))} con…</span>
+      ${cand.length?cand.map(c=>`<button class="mod-scelta" data-mod-scambia="${iso(c.d)}:${c.p.tipo}"><b>${esc(nomePasto(c.d,c.p))}</b><span>${esc(titoloPasto(c.p))}${c.p.kcal?' · '+c.p.kcal+' kcal':''}</span></button>`).join('')
+        :'<p class="muted" style="margin:0">Nessun pasto scambiabile nei giorni vicini (servono pasti non già modificati).</p>'}
+      <p class="muted" style="margin:0;font-size:12.5px">I due pasti si scambiano solo per queste due date; con "Ripristina" tornano entrambi come da dieta.</p>`;
+  } else if(pannello==='sostituisci'){
+    const piatti=piattiDellaDieta(p.tipo, titoloPasto(p));
+    const scheda=S.modPannello.scheda||'dieta';
+    html+=`<span class="label">Sostituisci ${esc(nomePasto(d,p))}</span>
+      <div class="seg" role="group" style="margin:0"><button data-mod-scheda="dieta" aria-pressed="${scheda==='dieta'}">Un piatto della dieta</button><button data-mod-scheda="nuovo" aria-pressed="${scheda==='nuovo'}">Scrivo io</button></div>`;
+    if(scheda==='dieta') html+= piatti.length ? piatti.map((x,i)=>`<button class="mod-scelta" data-mod-piatto="${i}"><b>${esc(titoloPasto(x.p))}</b><span>${esc(x.dove)}${x.p.kcal?' · '+x.p.kcal+' kcal':''}</span></button>`).join('') : '<p class="muted" style="margin:0">Nessun altro piatto di questo tipo nelle diete salvate.</p>';
+    else html+=`<form id="form-mod" class="stack" style="gap:8px">
+        <label class="label" for="mod-titolo">Nome del piatto</label><input id="mod-titolo" class="campo" maxlength="80" placeholder="es. Pasta al pomodoro" required>
+        <label class="label" for="mod-voci">Ingredienti a persona, uno per riga</label><textarea id="mod-voci" class="campo" style="min-height:110px;font:inherit" placeholder="Pasta integrale 70 g&#10;Passata di pomodoro 100 g&#10;Basilico"></textarea>
+        <label class="label" for="mod-kcal">Kcal a persona (facoltativo)</label><input id="mod-kcal" class="campo num" type="number" min="0" step="10" inputmode="numeric" style="max-width:140px">
+        <div class="row"><button class="btn primary" type="submit">Salva il piatto</button></div></form>`;
+  } else if(pannello==='fuori'){
+    html+=`<span class="label">Mangiamo fuori · ${esc(nomePasto(d,p))}</span>
+      <input id="mod-nota" class="campo" maxlength="80" placeholder="Dove o con chi (facoltativo), es. pizzeria con amici">
+      <p class="muted" style="margin:0;font-size:12.5px">Il pasto resta in elenco come "fuori casa" ed esce dalla lista della spesa.</p>
+      <div class="row"><button class="btn primary" data-mod-fuori="${di}:${p.tipo}">Conferma</button></div>`;
+  } else if(pannello==='persone'){
+    const n = m && m.persone!=null ? m.persone : personePer(d,p);
+    html+=`<span class="label">Persone a tavola solo per ${esc(nomePasto(d,p))}</span>
+      <div class="row"><div class="stepper"><button data-mod-pers="-1" aria-label="Una persona in meno">−</button><span class="num" id="mod-n">${n}</span><button data-mod-pers="1" aria-label="Una persona in più">+</button></div>
+      <button class="btn primary" data-mod-persone-salva="${di}:${p.tipo}">Salva</button>${m&&m.persone!=null?`<button class="btn ghost" data-mod-persone-togli="${di}:${p.tipo}">Torna al normale</button>`:''}</div>
+      <p class="muted" style="margin:0;font-size:12.5px">Le dosi e la spesa si calcolano per questo numero. Con 0 il pasto esce dalla spesa.</p>`;
+  }
+  html+=`<div><button class="btn ghost" data-mod-chiudi="1">Annulla</button></div></div></div>`;
+  return html;
+}
+function candidatiScambio(d,p){
+  const out=[];
+  for(let i=-6;i<=6;i++){
+    const x=addDays(d,i), g=giornoData(x); if(!g) continue;
+    for(const q of g.pasti){
+      if(i===0 && q.tipo===p.tipo) continue;
+      const stessoTipo=q.tipo===p.tipo, principaliStessoGiorno = i===0 && PRINCIPALI.includes(q.tipo) && PRINCIPALI.includes(p.tipo) && q.tipo!=='colazione' && p.tipo!=='colazione';
+      if(!stessoTipo && !principaliStessoGiorno) continue;
+      if(modPer(x,q.tipo) || libero(q)) continue;
+      out.push({d:x, p:q, i});
+    }
+  }
+  return out.sort((a,b)=>Math.abs(a.i)-Math.abs(b.i) || a.i-b.i);
+}
+function piattiDellaDieta(tipo, escludi){
+  const visti=new Map();
+  for(const w of S.settimane){
+    for(const g of Object.values(w.r.settimana)){
+      for(const q of g.pasti){
+        if(q.tipo!==tipo || libero(q)) continue;
+        const t=titoloPasto(q); if(t===escludi || visti.has(norm(t))) continue;
+        visti.set(norm(t), {p:q, dove:`dieta del ${settimanaTesto(w.inizio)} · ${GIORNI[g.dow].toLowerCase()}`});
+      }
+    }
+  }
+  return [...visti.values()].sort((a,b)=>titoloPasto(a.p).localeCompare(titoloPasto(b.p),'it'));
+}
+function riapriPasto(di,tipo){ S.modPannello=null; apriPasto(di,tipo); render(); }
+
+$('#sheet').addEventListener('click', async e=>{
+  const b=e.target.closest('button'); if(!b || !ricettaAperta) return;
+  const {di, tipo}=ricettaAperta, d=daIso(di), id=modId(di,tipo);
+  if(b.dataset.modApri){ S.modPannello={id, tipo:b.dataset.modApri}; return apriPasto(di,tipo); }
+  if(b.dataset.modChiudi){ S.modPannello=null; return apriPasto(di,tipo); }
+  if(b.dataset.modScheda){ S.modPannello={...S.modPannello, scheda:b.dataset.modScheda}; return apriPasto(di,tipo); }
+  if(b.dataset.modRipristina){
+    const m=S.modifiche[id]; const ids=[id]; if(m && m.coppia) ids.push(m.coppia);
+    await togliModifiche(ids); return riapriPasto(di,tipo);
+  }
+  if(b.dataset.modScambia){
+    const [di2,tipo2]=b.dataset.modScambia.split(':'), d2=daIso(di2), id2=modId(di2,tipo2);
+    const p1=giornoBase(d).pasti.find(x=>x.tipo===tipo), p2=giornoBase(d2).pasti.find(x=>x.tipo===tipo2);
+    if(!p1 || !p2) return;
+    const m1=S.modifiche[id]||{}, m2=S.modifiche[id2]||{};
+    await salvaModifica(id, {...(m1.persone!=null?{persone:m1.persone}:{}), pasto:contenutoPasto(p2), scambio:nomePasto(d2,p2), coppia:id2});
+    await salvaModifica(id2, {...(m2.persone!=null?{persone:m2.persone}:{}), pasto:contenutoPasto(p1), scambio:nomePasto(d,p1), coppia:id});
+    return riapriPasto(di,tipo);
+  }
+  if(b.dataset.modPiatto!==undefined){
+    const p=pastoData(d,tipo), x=piattiDellaDieta(tipo, titoloPasto(p.originale||p))[+b.dataset.modPiatto]; if(!x) return;
+    const m=S.modifiche[id]||{};
+    if(m.coppia) await togliModifiche([m.coppia]);
+    await salvaModifica(id, {...(m.persone!=null?{persone:m.persone}:{}), pasto:contenutoPasto(x.p), origine:x.dove});
+    return riapriPasto(di,tipo);
+  }
+  if(b.dataset.modFuori){
+    const m=S.modifiche[id]||{};
+    if(m.coppia) await togliModifiche([m.coppia]);
+    await salvaModifica(id, {...(m.persone!=null?{persone:m.persone}:{}), fuori:true, nota:($('#mod-nota').value||'').trim().slice(0,80)});
+    return riapriPasto(di,tipo);
+  }
+  if(b.dataset.modPers){ const el=$('#mod-n'); el.textContent=Math.max(0, Math.min(20, +el.textContent + +b.dataset.modPers)); return; }
+  if(b.dataset.modPersoneSalva){
+    const m=S.modifiche[id]||{}, n=+$('#mod-n').textContent;
+    const {persone, ...resto}=m;
+    await salvaModifica(id, {...resto, persone:n});
+    return riapriPasto(di,tipo);
+  }
+  if(b.dataset.modPersoneTogli){
+    const m=S.modifiche[id]||{}; const {persone, data, tipo:_t, aggiornato_il, ...resto}=m;
+    if(Object.keys(resto).length) await salvaModifica(id, resto); else await togliModifiche([id]);
+    return riapriPasto(di,tipo);
+  }
+});
+$('#sheet').addEventListener('submit', async e=>{
+  if(e.target.id!=='form-mod' || !ricettaAperta) return;
+  e.preventDefault();
+  const {di, tipo}=ricettaAperta, id=modId(di,tipo);
+  const titolo=$('#mod-titolo').value.replace(/\s+/g,' ').trim(); if(!titolo) return $('#mod-titolo').focus();
+  const voci=$('#mod-voci').value.split(/\r?\n/).map(l=>l.replace(/^[*\-•·]\s*/,'').trim()).filter(Boolean).flatMap(dividiVoce);
+  const kcal=$('#mod-kcal').value ? +$('#mod-kcal').value : null;
+  const m=S.modifiche[id]||{};
+  if(m.coppia) await togliModifiche([m.coppia]);
+  await salvaModifica(id, {...(m.persone!=null?{persone:m.persone}:{}), pasto:{titolo, voci:voci.map(v=>({nome:v.nome, qta:v.qta, unita:v.unita})), kcal, note:[]}, origine:'scritto a mano'});
+  riapriPasto(di,tipo);
+});
+
 /* ---------- Spesa: voci in più (libere o dal kit di emergenza) ---------- */
 function vistaExtra(){
   const voci=[...S.extra].sort((a,b)=>(a.creato_il||'').localeCompare(b.creato_il||''));
@@ -1860,6 +2041,8 @@ async function collega(){
   const db = adattaDb(fb.fs, 'famiglie/'+S.codice);
   S.settCol=db.collection('settimane'); S.famRef=db.doc('impostazioni/famiglia');
   S.spunteCol=db.collection('spunte'); S.ricetteCol=db.collection('ricette'); S.pesiCol=db.collection('pesi');
+  S.modCol=db.collection('modifiche');
+  S.modCol.onSnapshot(snap=>{ if(snap.metadata.fromCache && !snap.size && Object.keys(S.modifiche).length) return; S.modifiche=Object.fromEntries(snap.docs.map(d=>[d.id, d.data()])); LS.set('modifiche', S.modifiche); if(['oggi','settimana','spesa'].includes(S.view) && !staScrivendo() && $('#sheet').hidden) render(); }, e=>console.error(e));
   S.dispCol=db.collection('emergenza_dispositivi');
   setTimeout(rinnovaTokenSeServe, 4000);
   S.extraCol=db.collection('spesa_extra');
@@ -1891,6 +2074,7 @@ async function importaDatiIniziali(){
     for(const [id,r] of Object.entries(d.ricette||{})) await S.ricetteCol.doc(id).set(r);
     for(const p of (Array.isArray(d.pesi)?d.pesi:[])) if(p && p.id && p.nome) await S.pesiCol.doc(p.id).set({nome:p.nome, misure:p.misure||{}});
     for(const a of (Array.isArray(d.emergenza_articoli)?d.emergenza_articoli:[])) if(a && a.id && a.nome){ const {id,...x}=a; await S.emCol.doc(id).set(x); }
+    for(const [id,m] of Object.entries(d.modifiche && typeof d.modifiche==='object' ? d.modifiche : {})) if(/^\d{4}-\d{2}-\d{2}_[a-z]+$/.test(id)) await S.modCol.doc(id).set(m);
     S.importando=false;
   }catch(e){ console.error(e); S.importando=false; S.erroreAvvio='Importazione non riuscita: riprova tra poco.'; render(); }
 }
@@ -1914,13 +2098,13 @@ document.addEventListener('submit', e=>{
 app.addEventListener('click', async e=>{
   const t=e.target.closest('button'); if(!t) return;
   if(t.id==='scarica-backup'){
-    const dati={settimane:S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})), famiglia:{nome:S.nomeFamiglia||'', persone:S.persone, assenze:S.assenze}, ricette:{}, pesi:S.pesi.map(p=>({id:p.id, nome:p.nome, misure:p.misure})), emergenza_articoli:S.emArticoli};
+    const dati={settimane:S.settimane.map(w=>({inizio:w.inizio, testo:w.testo, aggiornata:w.aggiornata})), famiglia:{nome:S.nomeFamiglia||'', persone:S.persone, assenze:S.assenze}, ricette:{}, pesi:S.pesi.map(p=>({id:p.id, nome:p.nome, misure:p.misure})), emergenza_articoli:S.emArticoli, modifiche:S.modifiche};
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(dati,null,1)],{type:'application/json'}));
     a.download='apparecchio-backup-'+iso(new Date())+'.json'; document.body.appendChild(a); a.click(); a.remove(); return;
   }
   if(t.id==='esci'){ S.esciConferma=true; return render(); }
   if(t.id==='esci-no'){ S.esciConferma=false; return render(); }
-  if(t.id==='esci-si'){ if(LS.get('notifiche',false)){ try{ await Promise.race([spegniNotifiche(), new Promise(r=>setTimeout(r,2500))]); }catch(_){} } ['codice','settimane','famiglia','spunte','pesi','pesoSel','emergenza','extra','notifiche','dispositivoCreato'].forEach(k=>{ try{ localStorage.removeItem('apparecchio:'+k) }catch(_){} }); location.reload(); return; }
+  if(t.id==='esci-si'){ if(LS.get('notifiche',false)){ try{ await Promise.race([spegniNotifiche(), new Promise(r=>setTimeout(r,2500))]); }catch(_){} } ['codice','settimane','famiglia','spunte','pesi','pesoSel','emergenza','extra','notifiche','dispositivoCreato','modifiche'].forEach(k=>{ try{ localStorage.removeItem('apparecchio:'+k) }catch(_){} }); location.reload(); return; }
   if(t.id==='copia-codice'){ const st=$('#codice-stato'); try{ await navigator.clipboard.writeText(S.codice); st.textContent='Codice copiato.'; st.className='status ok'; }catch(_){ st.textContent='Tieni premuto sul codice per copiarlo.'; st.className='status'; } }
 });
 
@@ -1953,6 +2137,7 @@ function registraSw(){
   const fam=LS.get('famiglia',null); if(fam) impostaFamiglia(fam);
   S.pesi=LS.get('pesi',[]) || []; S.pesoSel=LS.get('pesoSel',null);
   S.extra=LS.get('extra',[]) || [];
+  const mods=LS.get('modifiche',null); if(mods && typeof mods==='object') S.modifiche=mods;
   const em=LS.get('emergenza',null); if(Array.isArray(em)){ S.emArticoli=em; S.emCaricato=true; }
   render();
   setInterval(()=>{ if($('#sheet').hidden && (S.view==='oggi' || S.view==='settimana')) render() },60000);
